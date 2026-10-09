@@ -1,14 +1,60 @@
 FHGFF3
 
-New FAIR BioHeaders project contributions from March 2025 onward use
-Mozilla Public License 2.0, under the maintainer policy adopted October 9, 2026.
+MPL-2.0 SCOPE AND PROVENANCE
 
-This repository is a fork of biodatamodels/gff-schema. The inherited
-upstream tree has no root license notice in the inspected checkout. This
-MPL-2.0 grant is limited to FAIR BioHeaders contributions for which the
-contributors have the necessary rights. It does not grant rights in, or
-relicense, inherited upstream material. Upstream reuse permissions require
-clarification from the rights holders; consult file notices and history.
+This inventory identifies the FAIR BioHeaders material covered by this
+MPL-2.0 policy. It does not determine authorship or licensing authority;
+the import commit records repository history, not proof of rights.
+
+MPL-2.0-covered FAIR BioHeaders contributions:
+- The policy and scope text at the beginning of this file, before the
+  “Mozilla Public License Version 2.0” heading.
+- The “Licensing” section of README.md, added in commit 413de2f.
+- The “License of contributions” section of CONTRIBUTING.md, added in
+  commit 413de2f.
+
+The standard MPL text below is Mozilla's license text, not a claim of
+FAIR BioHeaders authorship. Future contributions are covered by this
+policy only when their files or portions are identified in this
+inventory and the contributors have the necessary rights. Retain and
+follow any applicable existing file-level notices.
+
+Inherited snapshot, excluded from this MPL-2.0 grant:
+The following files were added in repository import commit 9c8cf64
+(November 6, 2024). In README.md and CONTRIBUTING.md, only the sections
+listed above are designated as MPL-2.0-covered contributions; their
+remaining imported content is excluded. No upstream root license notice
+was present in the inspected snapshot. Existing file-level notices, if
+any, remain applicable; this inventory does not grant rights in these
+files or resolve their upstream permissions.
+
+- .gitignore
+- CONTRIBUTING.md
+- MAINTAINERS.md
+- Makefile
+- README.md
+- csv/README.md
+- docs/README.txt
+- environment.sh
+- graphql/README.md
+- graphql/gff.graphql
+- jsonschema/README.md
+- jsonschema/gff3-validator-webapp.html
+- jsonschema/gff3-validator-webapp.py
+- jsonschema/gff.schema.json
+- mkdocs.yml
+- owl/README.md
+- owl/gff.owl.ttl
+- python/README.md
+- python/gff.py
+- python/gff3-validator.py
+- rdf/README.md
+- requirements.txt
+- shex/README.md
+- shex/gff.shex
+- src/docs/credits.md
+- src/docs/home.md
+- src/schema/gff.yaml
 
 No USDA government-work status is asserted for this repository.
 
