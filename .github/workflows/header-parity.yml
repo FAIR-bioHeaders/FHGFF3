@@ -1,0 +1,35 @@
+name: Check header parity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  header-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.13'
+      - name: Read the pinned shared revision
+        id: pin
+        run: |
+          echo "commit=$(python3 -c 'import json; print(json.load(open("header/provenance.json"))["source"]["commit"])')" >> "$GITHUB_OUTPUT"
+      - name: Check out the pinned shared publication revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: FAIR-bioHeaders/FAIR-bioHeaders-Specification
+          ref: ${{ steps.pin.outputs.commit }}
+          path: .upstream/FAIR-bioHeaders-Specification
+          persist-credentials: false
+      - name: Check the header development copy against the pinned revision
+        run: python3 scripts/check_header_parity.py --upstream .upstream/FAIR-bioHeaders-Specification
