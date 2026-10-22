@@ -1,0 +1,274 @@
+{
+  "provenanceVersion": 1,
+  "description": "Pinned provenance for the FAIR FHGFF3 header development copy under header/. Every entry under 'copied' is a byte-for-byte copy of the named path at 'source.commit' in FAIR-bioHeaders-Specification. 'imports' are shared files the copy depends on but does not vendor; their digests are recorded for reference. scripts/check_header_parity.py verifies the local copies against these digests and, with --upstream, against the pinned commit itself.",
+  "source": {
+    "repository": "FAIR-bioHeaders/FAIR-bioHeaders-Specification",
+    "url": "https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification",
+    "commit": "bdcaecf759b5b2be5fd61bf8f39368a7e3963315",
+    "commitDate": "2026-10-21 17:57:27 -0400",
+    "commitSubject": "Merge remote-tracking branch 'security-patch/security/v0.4.1'",
+    "ref": "main"
+  },
+  "licensing": {
+    "headerTree": "The files under header/ are FAIR BioHeaders contributions, MPL-2.0 under this repository's LICENSE and the shared publication repository's LICENSE. They are the independently authored FAIR FHGFF3 header contract, not the inherited biodatamodels/gff-schema feature model.",
+    "inheritedTree": "The inherited gff-schema feature model (src/, jsonschema/, python/, rdf/, owl/, shex/, graphql/, csv/) is excluded from this MPL-2.0 grant; its upstream permissions remain unresolved (FAIR-bioHeaders/FHGFF3#3). Nothing under header/ is copied from it."
+  },
+  "copied": [
+    {
+      "local": "header/model/fhgff3_linkml.yml",
+      "upstream": "fhgff3_linkml.yml",
+      "size": 5391,
+      "sha256": "cc71178b8c6a61b1c9947a496e0af2a100ea62585e6807bbfe762f217af8fe1a"
+    },
+    {
+      "local": "header/docs/FHGFF3.md",
+      "upstream": "docs/FHGFF3.md",
+      "size": 10131,
+      "sha256": "cedd13cd74aa566605c73d6f4057024778ada3433851a1810f0b9d926b26517b"
+    },
+    {
+      "local": "header/examples/fhgff3/annotation.fhgff3.gff3",
+      "upstream": "examples/fhgff3/annotation.fhgff3.gff3",
+      "size": 943,
+      "sha256": "e8dab46b7d94b0f04408a2fcec776ba690a69ac79c19113f6d7e37aa058affd8"
+    },
+    {
+      "local": "header/examples/fhgff3/annotation.fhgff3.yaml",
+      "upstream": "examples/fhgff3/annotation.fhgff3.yaml",
+      "size": 551,
+      "sha256": "751eeb18585fc7a64f84ad6f959266207e11cac2e50c48a2c52071374db11428"
+    },
+    {
+      "local": "header/examples/fhgff3/embedded-fasta.fhgff3.gff3",
+      "upstream": "examples/fhgff3/embedded-fasta.fhgff3.gff3",
+      "size": 995,
+      "sha256": "99d3357b48fffc256d5424b357f7cd4503a9eaf14cd436328d3fdc143a476341"
+    },
+    {
+      "local": "header/examples/fhgff3/genome.fhr.fasta",
+      "upstream": "examples/fhgff3/genome.fhr.fasta",
+      "size": 582,
+      "sha256": "860070c7113b86146657241af3992a8a155052dd7f4d41833aca642afdcd41f6"
+    },
+    {
+      "local": "header/examples/fhgff3/header-invalid.fhgff3.gff3",
+      "upstream": "examples/fhgff3/header-invalid.fhgff3.gff3",
+      "size": 812,
+      "sha256": "e9d1792cd78d4b4a69339d9a73587ef4c4d6b68a3221fe27d2c84591f707cf42"
+    },
+    {
+      "local": "header/examples/fhgff3/minimal-reference.fhgff3.json",
+      "upstream": "examples/fhgff3/minimal-reference.fhgff3.json",
+      "size": 684,
+      "sha256": "3805652b537ac72acce017e5d12f91754627590883331031f133e91d74c9ec43"
+    },
+    {
+      "local": "header/examples/fhgff3/no-header.gff3",
+      "upstream": "examples/fhgff3/no-header.gff3",
+      "size": 360,
+      "sha256": "d2f0e995edd2e9cb48f02661b8253e198c56c79de185feeb8482d19e469d36d6"
+    },
+    {
+      "local": "header/examples/fhgff3/rich.fhgff3.yaml",
+      "upstream": "examples/fhgff3/rich.fhgff3.yaml",
+      "size": 1393,
+      "sha256": "43115e7aded6c49610f98e0862264f9589f4308cb8750ead540ef1a6ec3fc0ae"
+    },
+    {
+      "local": "header/examples/fhgff3/stale-parent.fhgff3.gff3",
+      "upstream": "examples/fhgff3/stale-parent.fhgff3.gff3",
+      "size": 979,
+      "sha256": "a2f394a5a9ddfbe1f773ef58894e4ad1d53a3e8013ac3d099448fa043dafe94e"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-bgzf.fhgff3.gff3.gz",
+      "upstream": "conformance/valid/fhgff3-bgzf.fhgff3.gff3.gz",
+      "size": 1038,
+      "sha256": "2caa33ad3991399659ab14a0cfc6e58ba73c6e25d354940e0cbc378b2098ca23"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-both-links.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-both-links.fhgff3.gff3",
+      "size": 902,
+      "sha256": "ed49e9830867e2765ea4136d5a0426dbd796f342714807a40f5aa661c4b1ab34"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-crlf.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-crlf.fhgff3.gff3",
+      "size": 782,
+      "sha256": "574f1d25367b100a416461c195aee441a62462e044bae4dd4e9de586c850354a"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-directives-after-header.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-directives-after-header.fhgff3.gff3",
+      "size": 838,
+      "sha256": "a9c1f0a734c9cd376906973f3bfef487d98338601d16dcf064a064ce3dd35373"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-directives-interleaved.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-directives-interleaved.fhgff3.gff3",
+      "size": 927,
+      "sha256": "596246a5b703e64a8741a54dde4bf461ba24c72d30d942f9cc660c71a28852be"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-embedded-fasta.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-embedded-fasta.fhgff3.gff3",
+      "size": 797,
+      "sha256": "e8f4ecae009eb234cbfd934bda9adbf7cead54ba032a5acfdc199037845980be"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-gzip.fhgff3.gff3.gz",
+      "upstream": "conformance/valid/fhgff3-gzip.fhgff3.gff3.gz",
+      "size": 785,
+      "sha256": "cb53e6f9cd8f1509f34fd36b2fa824930a1d0fc8926b5c7737aec2609d89caa9"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-header-only.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-header-only.fhgff3.gff3",
+      "size": 618,
+      "sha256": "29f482706176d077b231b059cc67fc43527734fad49604ba0d5bac2396d65824"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-minimal-checksum-link.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-minimal-checksum-link.fhgff3.gff3",
+      "size": 762,
+      "sha256": "9356c6d88ce3ee37956efb5ee73099b1263c57f1fd2d1ad97699e914c8905568"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-minimal-reference-link.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-minimal-reference-link.fhgff3.gff3",
+      "size": 778,
+      "sha256": "aaf1b21630708a04b5c091a267fbdfde881b80b8ec5d8f79350fcea917ec5344"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-nested-parent-checksum.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-nested-parent-checksum.fhgff3.gff3",
+      "size": 877,
+      "sha256": "4e5266f55e827fe7f84dc5f8ff13cf052f72f8c83e6532be920bad87db639cfa"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-schema-canonical-raw-main.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-schema-canonical-raw-main.fhgff3.gff3",
+      "size": 812,
+      "sha256": "0ab2677810d3fdaf7d4f8738c2b2a0abf102198d1021177d720a355e56fc43f2"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-schema-raw-main.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-schema-raw-main.fhgff3.gff3",
+      "size": 800,
+      "sha256": "6a9683050a30626a7483695207b478c812bc428e08b285d0b8d59f0a2bb1eb3f"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-triple-hash-before-features.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-triple-hash-before-features.fhgff3.gff3",
+      "size": 766,
+      "sha256": "e487dacbf9c9ba7050d59769f54a3a875e36923f34a60ac340dabc26f6f715ab"
+    },
+    {
+      "local": "header/conformance/valid/fhgff3-version-3-1-26.fhgff3.gff3",
+      "upstream": "conformance/valid/fhgff3-version-3-1-26.fhgff3.gff3",
+      "size": 767,
+      "sha256": "68df80a9aa1c5181d76fb1fae17e70dddf2a0cd9ed3efcdbccd710c08372b22b"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-annotates-fhp.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-annotates-fhp.fhgff3.gff3",
+      "size": 762,
+      "sha256": "ce7b42f31f448002c510f7e11889fe379ed6bcd9c2e67e89b45c7b3f5b0f7fcd"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-cites-fhr-schema.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-cites-fhr-schema.fhgff3.gff3",
+      "size": 797,
+      "sha256": "6308b57fa8ec183ad9d2a47970f68dff8b3c30014c73a017cf229e3a5c15a412"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-concatenated.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-concatenated.fhgff3.gff3",
+      "size": 1524,
+      "sha256": "d893fc28cc46c689f326acc569a308ef4137f22f042442cb724f61c2ab0517a0"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-fasta-tampered.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-fasta-tampered.fhgff3.gff3",
+      "size": 797,
+      "sha256": "7597c6f3dbf5d0645a9877db1d2b6201649c33e05028aaf2ca62115c30ec23e2"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-fhr-only-key.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-fhr-only-key.fhgff3.gff3",
+      "size": 789,
+      "sha256": "71710e3cfddcd4cc54cb10cc02058ea4258bb7eb432e54f68e2a81c0fac02e0a"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-half-reference.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-half-reference.fhgff3.gff3",
+      "size": 693,
+      "sha256": "1ac43b84dd4768a95ac20927084ca1ab382c14307d16b664d4fe7921c91cc97c"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-header-after-fasta.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-header-after-fasta.fhgff3.gff3",
+      "size": 674,
+      "sha256": "112d028910b25302940e8194d535e3ee02dddd5231ba799b310c3e7725893596"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-header-after-feature.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-header-after-feature.fhgff3.gff3",
+      "size": 798,
+      "sha256": "d82818248710397e660567f19cb0962b66ccdb4632f730af9c7e5351d55d7be3"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-header-before-version.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-header-before-version.fhgff3.gff3",
+      "size": 762,
+      "sha256": "017752b684a1c9596a3e801c5804daf9c16c78b184d047390f57598b3d77bd3f"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-no-genome-link.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-no-genome-link.fhgff3.gff3",
+      "size": 638,
+      "sha256": "c1216a419d483e9561e1cb2abdaa466c50f82307d2b21d5728f151ee0f89c066"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-schema-unknown-release.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-schema-unknown-release.fhgff3.gff3",
+      "size": 762,
+      "sha256": "2e5f603f7134162ab83c6787aa4833c5f1806869ea6247b9911790fca2af23a6"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-two-annotates.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-two-annotates.fhgff3.gff3",
+      "size": 871,
+      "sha256": "dc72b47ac9a449faef9e5103974a64d019572f9ff6e77227565ba280cde4da1c"
+    },
+    {
+      "local": "header/conformance/invalid/fhgff3-two-checksum-lines.fhgff3.gff3",
+      "upstream": "conformance/invalid/fhgff3-two-checksum-lines.fhgff3.gff3",
+      "size": 819,
+      "sha256": "b6b101590136910eccb3014ff32a24c89ef7e891fed7c8a8d669851096307ff1"
+    }
+  ],
+  "imports": [
+    {
+      "upstream": "schemas/core.yaml",
+      "size": 8581,
+      "sha256": "2bd657ece8c8cbfb4dfbba1f68cb3f708c1ab91baa0fcd50d97ddc58b7e96b5e"
+    },
+    {
+      "upstream": "schemas/shared.yaml",
+      "size": 3730,
+      "sha256": "0e7e08d52c739cf245ed76093f22b6f37d6d6e4c4db76b1007619d60ef6a1043"
+    },
+    {
+      "upstream": "conformance/manifest.json",
+      "size": 142652,
+      "sha256": "d4909fd3cbf9312ccb9466fbf856138b8e121980b560e71a4db4647b0e352239"
+    },
+    {
+      "upstream": "docs/FORMAT.md",
+      "size": 11369,
+      "sha256": "997c06a14af33f8e812880933e6adc8f35be603f75fc1023994ad46e9448ee70"
+    }
+  ]
+}

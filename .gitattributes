@@ -1,0 +1,6 @@
+# The FAIR FHGFF3 header development copy under header/ is byte-exact against
+# the pinned upstream revision recorded in header/provenance.json
+# (scripts/check_header_parity.py). Never convert its line endings: the CRLF
+# vectors and the checksummed examples must keep their exact bytes.
+header/** -text
+header/**/*.gz binary
