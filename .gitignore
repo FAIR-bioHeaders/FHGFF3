@@ -1,7 +1,11 @@
 Pipfile
+__pycache__/
+*.pyc
 target/
 site/
 venv/
 docs/*md
+# The draft FHGFF3 microdata binding is hand-written, not generated.
+!docs/FHGFF3-MICRODATA.md
 docs/types/
 */my_schema.*
