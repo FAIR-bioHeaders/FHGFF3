@@ -32,10 +32,17 @@ PROVENANCE = ROOT / "header" / "provenance.json"
 # Directories that must contain exactly the copied files, no more and no less.
 STRICT_DIRS = (
     "header/model",
+    "header/docs",
     "header/examples/fhgff3",
     "header/conformance/valid",
     "header/conformance/invalid",
 )
+# Local-only files that are allowed alongside the copied files in a strict
+# directory. header/docs/README.md is the landing page and link map for the
+# byte-exact copy; it is intentionally not part of the pinned set.
+ALLOWED_EXTRAS = frozenset({
+    "header/docs/README.md",
+})
 UPSTREAM_ENV = "FAIR_BIOHEADERS_SPECIFICATION"
 
 
@@ -89,7 +96,7 @@ def check_extras(listed):
             for p in directory.rglob("*")
             if p.is_file()
         }
-        for extra in sorted(actual - expected):
+        for extra in sorted(actual - expected - ALLOWED_EXTRAS):
             errors.append(f"unlisted file: {extra}")
     return errors
 
