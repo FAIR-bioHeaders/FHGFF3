@@ -238,20 +238,24 @@ checksum-linked FHR parent. The rich record has both, plus nested `source`, `der
 zero count, `completeness`, and escaped Unicode and markup.
 
 Negative fixtures under `examples/fhgff3/` cover the wrong itemtype, an unsupported
-version, malformed nesting, a repeated scalar, script-only content, a missing genome link,
-two `annotates` relationships and an `annotates` item that is not an FHR parent. All
-values are clearly synthetic placeholders; no real accession, DOI, SeqCol digest or author
-is invented.
+version (including a release the reader does not have), malformed nesting, a repeated
+scalar, a repeated array container, script-only content, a missing genome link, two
+`annotates` relationships and an `annotates` item that is not an FHR parent. All values
+are clearly synthetic placeholders; no real accession, DOI, SeqCol digest or author is
+invented.
 
 `tests/fhgff3_microdata.py` is a **test-only** reader, writer and table helper built on the
 standard library `html.parser`; `tests/mini_jsonschema.py` is a test-only subset validator
 so the tests can check the extracted metadata against the released `fhgff3.json` without a
-`jsonschema` dependency. Neither is shipped and neither is a runtime parser.
-`tests/test_fhgff3_microdata.py` checks that the fixtures extract back to their canonical
-records, that the writer reproduces the committed HTML and the canonical JSON/YAML, that
-the readable table matches the embedded metadata, and that the negative fixtures are
-rejected. `tests/fixtures/fhgff3.json` is a copy of the released shared schema used only by
-these tests.
+`jsonschema` dependency. Neither is shipped and neither is a runtime parser. The reader
+carries an explicit fixed-release map (`v0.4.0` and `v0.4.1`, both the same FHGFF3 `"1.0"`
+contract) and rejects any release it does not have instead of falling back to its local
+copy. `tests/test_fhgff3_microdata.py` checks that the fixtures extract back to their
+canonical records, that the writer reproduces the committed HTML and the canonical
+JSON/YAML, that the readable table matches the embedded metadata, that repeated array
+containers stay nested and fail validation, that script content never supplies metadata,
+and that the negative fixtures are rejected. `tests/fixtures/releases/fhgff3-v0.4.0.json`
+is a copy of the released shared schema used only by these tests.
 
 The rule ids H1 to H8 are stable labels local to this document. They add no requirements
 beyond the text above and are not part of the shared conformance manifest, which covers

@@ -29,7 +29,20 @@ FHR_ITEMTYPE = (
 )
 EXAMPLES = ROOT / "examples" / "fhgff3"
 DOC = ROOT / "docs" / "FHGFF3-MICRODATA.md"
-SCHEMA = json.loads((ROOT / "tests" / "fixtures" / "fhgff3.json").read_text(encoding="utf-8"))
+SCHEMA = json.loads(
+    (ROOT / "tests" / "fixtures" / "releases" / "fhgff3-v0.4.0.json")
+    .read_text(encoding="utf-8"))
+
+RELEASE_040 = (
+    "https://raw.githubusercontent.com/FAIR-bioHeaders/"
+    "FAIR-bioHeaders-Specification/v0.4.0/fhgff3.json"
+)
+RELEASE_040_W3ID = "https://w3id.org/fair-bioheaders/fhgff3/v0.4.0"
+RELEASE_041 = (
+    "https://raw.githubusercontent.com/FAIR-bioHeaders/"
+    "FAIR-bioHeaders-Specification/v0.4.1/fhgff3.json"
+)
+CHECKSUM = "A" * 43 + "="
 
 # The committed valid HTML fixtures and the canonical record each one pins.
 VALID_FIXTURES = {
@@ -40,8 +53,10 @@ VALID_FIXTURES = {
 NEGATIVE_FIXTURES = [
     "invalid-itemtype.microdata.fhgff3.html",
     "invalid-unsupported-version.microdata.fhgff3.html",
+    "invalid-unknown-release.microdata.fhgff3.html",
     "invalid-malformed-nesting.microdata.fhgff3.html",
     "invalid-repeated-scalar.microdata.fhgff3.html",
+    "invalid-repeated-array.microdata.fhgff3.html",
     "invalid-unsafe-content.microdata.fhgff3.html",
     "invalid-no-genome-link.microdata.fhgff3.html",
     "invalid-two-annotates.microdata.fhgff3.html",
@@ -74,9 +89,10 @@ def read_fixture(name):
 
 
 def extract_page(page):
-    """Read a document and reject it unless it also matches fhgff3.json (M4)."""
+    """Read a document and reject it unless it matches the selected schema (M4)."""
     record = fhgff3_microdata.read_page(page, SCHEMA)
-    mini_jsonschema.validate(record, SCHEMA)
+    schema = fhgff3_microdata.resolve_schema(record["schema"], SCHEMA)
+    mini_jsonschema.validate(record, schema)
     return record
 
 
@@ -161,16 +177,30 @@ class FHGFF3MicrodataBindingTests(unittest.TestCase):
 
     def test_schema_property_selects_an_fhgff3_contract(self):
         for selected in (
+            RELEASE_040,
+            RELEASE_040_W3ID,
+            RELEASE_041,
             "https://raw.githubusercontent.com/FAIR-bioHeaders/"
             "FHR-Specification/v0.4.0/fhgff3.json",
-            "https://w3id.org/fair-bioheaders/fhgff3/v0.4.0",
         ):
             with self.subTest(schema=selected):
                 record = dict(self.minimal(), schema=selected)
-                mini_jsonschema.validate(record, SCHEMA)
                 self.assertTrue(same_json(
+                    extract_page(fhgff3_microdata.write_page(record)), record))
+
+    def test_unavailable_release_is_rejected(self):
+        # V4: an unknown release is unsupported-version; the reader must not
+        # fall back to its local v0.4.0 copy.
+        for selected in (
+            "https://raw.githubusercontent.com/FAIR-bioHeaders/"
+            "FAIR-bioHeaders-Specification/v9.9.9/fhgff3.json",
+            "https://w3id.org/fair-bioheaders/fhgff3/v9.9.9",
+        ):
+            with self.subTest(schema=selected):
+                record = dict(self.minimal(), schema=selected)
+                with self.assertRaises(fhgff3_microdata.MicrodataError):
                     fhgff3_microdata.read_page(
-                        fhgff3_microdata.write_page(record), SCHEMA), record))
+                        fhgff3_microdata.write_page(record), SCHEMA)
 
     def test_an_fhr_schema_value_is_not_an_fhgff3_record(self):
         record = dict(self.minimal(), schema=FHR_ITEMTYPE)
@@ -204,6 +234,29 @@ class FHGFF3MicrodataBindingTests(unittest.TestCase):
         self.assertEqual(extracted["annotation"],
                          [self.minimal()["annotation"], "Second"])
         self.assertTrue(list(mini_jsonschema.iter_errors(extracted, SCHEMA)))
+
+    def test_repeated_array_containers_are_not_flattened(self):
+        # H7: two array containers are two repeated containers, not one flat
+        # list. They stay nested so schema validation rejects the record.
+        container = ('<span itemprop="metadataAuthor" data-fhr-type="array">'
+                     '<span itemprop="item" itemscope data-fhr-type="object">'
+                     '<span itemprop="name" data-fhr-type="string">Synthetic '
+                     "metadata author (placeholder)</span></span></span>")
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            container, container + container, 1)
+        extracted = fhgff3_microdata.read_page(page, SCHEMA)
+        self.assertEqual(len(extracted["metadataAuthor"]), 2)
+        self.assertTrue(all(isinstance(item, list)
+                            for item in extracted["metadataAuthor"]))
+        with self.assertRaises(mini_jsonschema.ValidationError):
+            extract_page(page)
+
+    def test_ordinary_repeated_array_properties_form_a_flat_list(self):
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            "</div>", '<span itemprop="identifier">ex:one</span>'
+            '<span itemprop="identifier">ex:two</span></div>', 1)
+        extracted = extract_page(page)
+        self.assertEqual(extracted["identifier"], ["ex:one", "ex:two"])
 
     def test_malformed_array_child_is_rejected(self):
         page = fhgff3_microdata.write_page(self.minimal()).replace(
@@ -347,6 +400,115 @@ class FHGFF3MicrodataBindingTests(unittest.TestCase):
         self.assertTrue(same_json(
             fhgff3_microdata.read_page(with_handler, SCHEMA), self.minimal()))
 
+    def test_script_with_itemprop_is_not_a_property(self):
+        checksum = ('<span itemprop="checksum" data-fhr-type="string">'
+                    f"{CHECKSUM}</span>")
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            checksum,
+            '<script itemprop="checksum" data-fhr-type="string">'
+            f"{CHECKSUM}</script>", 1)
+        extracted = fhgff3_microdata.read_page(page, SCHEMA)
+        self.assertNotIn("checksum", extracted)
+        with self.assertRaises(mini_jsonschema.ValidationError):
+            extract_page(page)
+        # A property and its descendants inside a script are still inert.
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            checksum,
+            '<script itemprop="voucherSpecimen"><span itemprop="checksum" '
+            f'data-fhr-type="string">{CHECKSUM}</span></script>', 1)
+        extracted = fhgff3_microdata.read_page(page, SCHEMA)
+        self.assertNotIn("checksum", extracted)
+        self.assertNotIn("voucherSpecimen", extracted)
+
+    def test_script_text_inside_a_property_is_excluded(self):
+        documentation = fhgff3_microdata._write_property(
+            "documentation", self.minimal()["documentation"])
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            documentation,
+            '<span itemprop="documentation" data-fhr-type="string">'
+            "before<script>secret</script>after</span>", 1)
+        self.assertEqual(
+            fhgff3_microdata.read_page(page, SCHEMA)["documentation"],
+            "beforeafter")
+
+    def test_property_inside_ordinary_property_is_read(self):
+        documentation = fhgff3_microdata._write_property(
+            "documentation", self.minimal()["documentation"])
+        checksum = ('<span itemprop="checksum" data-fhr-type="string">'
+                    f"{CHECKSUM}</span>")
+        page = fhgff3_microdata.write_page(self.minimal()).replace(checksum, "", 1)
+        page = page.replace(
+            documentation,
+            '<span itemprop="documentation" data-fhr-type="string">'
+            f"{checksum}</span>", 1)
+        extracted = extract_page(page)
+        self.assertEqual(extracted["checksum"], CHECKSUM)
+        self.assertEqual(extracted["documentation"], CHECKSUM)
+        self.assertEqual(extracted, dict(self.minimal(), documentation=CHECKSUM))
+
+    def test_omitted_end_tags_match_explicit_end_tags(self):
+        page = fhgff3_microdata.write_page(self.minimal())
+        version = ('<span itemprop="version" data-fhr-type="string">'
+                   "1.0.0</span>")
+        expected_with_conditions = dict(self.minimal(), reuseConditions="CC0-1.0")
+        cases = [
+            ("p",
+             '<p itemprop="version" data-fhr-type="string">1.0.0'
+             "<span></span><div></div>",
+             '<p itemprop="version" data-fhr-type="string">1.0.0'
+             "<span></span></p><div></div>",
+             self.minimal()),
+            ("li",
+             '<ul><li itemprop="version" data-fhr-type="string">1.0.0'
+             '<li itemprop="reuseConditions" data-fhr-type="string">CC0-1.0</ul>',
+             '<ul><li itemprop="version" data-fhr-type="string">1.0.0</li>'
+             '<li itemprop="reuseConditions" data-fhr-type="string">CC0-1.0</li></ul>',
+             expected_with_conditions),
+            ("dt/dd",
+             '<dl><dt itemprop="version" data-fhr-type="string">1.0.0'
+             '<dd itemprop="reuseConditions" data-fhr-type="string">CC0-1.0</dl>',
+             '<dl><dt itemprop="version" data-fhr-type="string">1.0.0</dt>'
+             '<dd itemprop="reuseConditions" data-fhr-type="string">CC0-1.0</dd></dl>',
+             expected_with_conditions),
+            ("tr",
+             '<table><tr><td itemprop="version" data-fhr-type="string">1.0.0'
+             '<tr><td itemprop="reuseConditions" data-fhr-type="string">CC0-1.0</table>',
+             '<table><tr><td itemprop="version" data-fhr-type="string">1.0.0</td></tr>'
+             '<tr><td itemprop="reuseConditions" data-fhr-type="string">CC0-1.0'
+             "</td></tr></table>",
+             expected_with_conditions),
+            ("td",
+             '<table><tr><td itemprop="version" data-fhr-type="string">1.0.0'
+             '<td itemprop="reuseConditions" data-fhr-type="string">CC0-1.0</table>',
+             '<table><tr><td itemprop="version" data-fhr-type="string">1.0.0</td>'
+             '<td itemprop="reuseConditions" data-fhr-type="string">CC0-1.0'
+             "</td></tr></table>",
+             expected_with_conditions),
+            ("th",
+             '<table><tr><th itemprop="version" data-fhr-type="string">1.0.0'
+             '<th itemprop="reuseConditions" data-fhr-type="string">CC0-1.0</table>',
+             '<table><tr><th itemprop="version" data-fhr-type="string">1.0.0</th>'
+             '<th itemprop="reuseConditions" data-fhr-type="string">CC0-1.0'
+             "</th></tr></table>",
+             expected_with_conditions),
+            ("option",
+             '<select><option itemprop="version" data-fhr-type="string">1.0.0'
+             '<option itemprop="reuseConditions" data-fhr-type="string">CC0-1.0</select>',
+             '<select><option itemprop="version" data-fhr-type="string">1.0.0</option>'
+             '<option itemprop="reuseConditions" data-fhr-type="string">CC0-1.0'
+             "</option></select>",
+             expected_with_conditions),
+        ]
+        for label, omitted, explicit, expected in cases:
+            with self.subTest(tag=label):
+                self.assertIn(version, page)
+                omitted_page = page.replace(version, omitted, 1)
+                explicit_page = page.replace(version, explicit, 1)
+                self.assertTrue(same_json(
+                    fhgff3_microdata.read_page(omitted_page, SCHEMA), expected))
+                self.assertTrue(same_json(
+                    fhgff3_microdata.read_page(explicit_page, SCHEMA), expected))
+
     def test_first_attribute_wins(self):
         page = fhgff3_microdata.write_page(self.minimal()).replace(
             '<span itemprop="annotation" data-fhr-type="string">',
@@ -379,6 +541,36 @@ class FHGFF3MicrodataArtifactTests(unittest.TestCase):
         self.assertIn("derivedFrom", doc)
         self.assertIn("featureCounts", doc)
         self.assertIn("annotates", doc)
+
+    def test_yaml_writer_represents_empty_collections(self):
+        text = fhgff3_microdata.to_yaml({
+            "identifier": [],
+            "taxon": {},
+            "name": "x",
+        })
+        self.assertIn("identifier: []", text)
+        self.assertIn("taxon: {}", text)
+        self.assertNotIn("identifier:\n", text)
+        self.assertEqual(
+            fhgff3_microdata.to_yaml({"items": [[]], "objects": [{}]}),
+            "items:\n  - []\nobjects:\n  - {}\n")
+
+    def test_resolve_schema_maps_releases_to_fixed_contracts(self):
+        # The raw-main URL selects the reader's current schema.
+        self.assertIs(fhgff3_microdata.resolve_schema(FHGFF3_ITEMTYPE, SCHEMA), SCHEMA)
+        for selected in (RELEASE_040, RELEASE_040_W3ID, RELEASE_041):
+            with self.subTest(schema=selected):
+                resolved = fhgff3_microdata.resolve_schema(selected, SCHEMA)
+                self.assertEqual(
+                    resolved["properties"]["schemaVersion"]["enum"], ["1.0"])
+        for selected in (
+            "https://raw.githubusercontent.com/FAIR-bioHeaders/"
+            "FAIR-bioHeaders-Specification/v9.9.9/fhgff3.json",
+            "https://w3id.org/fair-bioheaders/fhgff3/v9.9.9",
+        ):
+            with self.subTest(schema=selected):
+                with self.assertRaises(fhgff3_microdata.MicrodataError):
+                    fhgff3_microdata.resolve_schema(selected, SCHEMA)
 
 
 if __name__ == "__main__":

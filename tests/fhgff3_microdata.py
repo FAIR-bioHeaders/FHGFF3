@@ -20,6 +20,7 @@ Schema's types, as rule M3 requires.
 """
 
 import json
+from pathlib import Path
 import re
 from html import escape
 from html.parser import HTMLParser
@@ -52,19 +53,51 @@ FHGFF3_W3ID_URL = re.compile(
 # The released FHGFF3 contract is schemaVersion "1.0" (schemas/versions.json).
 FHGFF3_SCHEMA_VERSION = "1.0"
 
-# Elements whose end tag HTML implies (docs/MICRODATA.md M2).
+# Fixed releases this reader carries. They are copies of released schemas, not
+# fetched at run time (docs/SCHEMA-VERSIONS.md V2 to V4). v0.4.1 carries the
+# same FHGFF3 schema contract as v0.4.0.
+RELEASES_DIR = Path(__file__).resolve().parent / "fixtures" / "releases"
+SUPPORTED_RELEASES = {
+    "v0.4.0": "fhgff3-v0.4.0.json",
+    "v0.4.1": "fhgff3-v0.4.0.json",
+}
+_RELEASE_CACHE = {}
+
+# Elements whose end tag HTML implies (docs/MICRODATA.md M2). The values are
+# the ancestors a start tag closes, and the scope its search must not cross.
 _VOID = {
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
     "param", "source", "track", "wbr",
 }
-_AUTO_CLOSE = {
-    "li": {"li"},
-    "dt": {"dt", "dd"},
-    "dd": {"dt", "dd"},
-    "tr": {"tr"},
-    "td": {"td", "th"},
-    "th": {"td", "th"},
-    "p": {"p"},
+_BASE_SCOPE = {
+    "applet", "caption", "html", "marquee", "object", "table", "td", "th",
+    "template",
+}
+_BUTTON_SCOPE = _BASE_SCOPE | {"button"}
+_LIST_SCOPE = _BASE_SCOPE | {"ol", "ul"}
+_TABLE_SCOPE = {"html", "table", "template"}
+
+# Start tags that close an open p in button scope.
+_P_CLOSERS = {
+    "address", "article", "aside", "blockquote", "details", "dialog", "div",
+    "dl", "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2",
+    "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "main", "menu", "nav",
+    "ol", "p", "pre", "search", "section", "table", "ul",
+    "li", "dt", "dd", "tr", "td", "th", "tbody", "thead", "tfoot",
+}
+_IMPLIED_BY_START = {
+    "li": ({"li"}, _LIST_SCOPE),
+    "dt": ({"dt", "dd"}, _BASE_SCOPE),
+    "dd": ({"dt", "dd"}, _BASE_SCOPE),
+    "option": ({"option"}, _BASE_SCOPE | {"select", "datalist"}),
+    "optgroup": ({"option", "optgroup"}, _BASE_SCOPE | {"select"}),
+    "tr": ({"tr"}, _TABLE_SCOPE),
+    "td": ({"td", "th"}, _TABLE_SCOPE),
+    "th": ({"td", "th"}, _TABLE_SCOPE),
+    "tbody": ({"tbody", "thead", "tfoot"}, _TABLE_SCOPE),
+    "thead": ({"tbody", "thead", "tfoot"}, _TABLE_SCOPE),
+    "tfoot": ({"tbody", "thead", "tfoot"}, _TABLE_SCOPE),
+    "colgroup": ({"colgroup"}, _TABLE_SCOPE),
 }
 # Elements whose defining attribute is the property value (docs/MICRODATA.md M2).
 _VALUE_ATTRIBUTE = {
@@ -112,9 +145,31 @@ class _TreeBuilder(HTMLParser):
         self.root = _Node("#document", {})
         self.stack = [self.root]
 
+    def _pop_through(self, targets, boundaries):
+        """Close the nearest target ancestor and everything above it.
+
+        The search skips inline descendants but stops at the scope boundary the
+        HTML rule names, so an open span does not hide the p or table cell that
+        the start tag has to close (docs/MICRODATA.md M2).
+        """
+        for index in range(len(self.stack) - 1, 0, -1):
+            node = self.stack[index]
+            if node.tag in targets:
+                del self.stack[index:]
+                return True
+            if node.tag in boundaries:
+                return False
+        return False
+
+    def _close_implied(self, tag):
+        if tag in _P_CLOSERS:
+            self._pop_through({"p"}, _BUTTON_SCOPE)
+        rule = _IMPLIED_BY_START.get(tag)
+        if rule:
+            self._pop_through(*rule)
+
     def handle_starttag(self, tag, attrs):
-        while len(self.stack) > 1 and self.stack[-1].tag in _AUTO_CLOSE.get(tag, ()):
-            self.stack.pop()
+        self._close_implied(tag)
         node = _Node(tag, _first_wins(attrs))
         self.stack[-1].children.append(node)
         if tag not in _VOID:
@@ -150,7 +205,11 @@ def _nodes(node):
 def _text(node):
     parts = []
     for child in node.children:
-        parts.append(child if isinstance(child, str) else _text(child))
+        if isinstance(child, str):
+            parts.append(child)
+        elif child.tag != "script":
+            # Script contents are inert data, never metadata (H6).
+            parts.append(_text(child))
     return "".join(parts)
 
 
@@ -184,6 +243,14 @@ def _json_type(root, subschema):
 
 def _subschema(root, parent, name):
     return _resolve(root, parent).get("properties", {}).get(name, {})
+
+
+def _item_subschema(root, subschema):
+    """The schema for one occurrence of a field, using an array's items."""
+    resolved = _resolve(root, subschema)
+    if _json_type(root, subschema) == "array":
+        return resolved.get("items", {})
+    return subschema
 
 
 def _parse_typed(raw, datatype):
@@ -223,9 +290,23 @@ def _property_elements(scope):
         for child in node.children:
             if not isinstance(child, _Node):
                 continue
+            if child.tag == "script":
+                continue  # Script contents never contribute metadata (H6).
+            if child.datatype in ("array", "object"):
+                # A typed container's children are the container's own values,
+                # not properties of the enclosing item.
+                if child.itemprop:
+                    for name in child.itemprop:
+                        yield child, name
+                continue
             if child.itemprop:
                 for name in child.itemprop:
                     yield child, name
+                if child.itemscope:
+                    continue  # A nested item; its properties are not the parent's.
+                # An ordinary property element can contain further properties;
+                # they still belong to the enclosing item (M1).
+                yield from walk(child)
             elif child.itemscope:
                 continue  # A separate item; its properties are not the parent's.
             else:
@@ -247,17 +328,21 @@ def _read_value(element, root, subschema):
             items.append(_read_value(child, root,
                                      _resolve(root, subschema).get("items", {})))
         return items
+    # An array field may also appear as an ordinary occurrence (an untyped
+    # item scope, or an explicitly typed object scope). Read it against the
+    # item schema, not the array schema (M3).
+    item_schema = _item_subschema(root, subschema)
     if datatype == "object":
         if not element.itemscope:
             raise MicrodataError("data-fhr-type=object without itemscope")
-        return _read_scope(element, root, subschema)
+        return _read_scope(element, root, item_schema)
     if datatype in _TYPED:
         return _parse_typed(_value_of(element), datatype)
     if datatype is not None:
         raise MicrodataError(f"unknown data-fhr-type {datatype!r}")
     if element.itemscope:
-        return _read_scope(element, root, subschema)
-    return _convert_untyped(_value_of(element), root, subschema)
+        return _read_scope(element, root, item_schema)
+    return _convert_untyped(_value_of(element), root, item_schema)
 
 
 def _read_scope(scope, root, subschema):
@@ -269,10 +354,14 @@ def _read_scope(scope, root, subschema):
     for name, values in occurrences.items():
         field = _subschema(root, subschema, name)
         if _json_type(root, field) == "array":
-            flat = []
-            for value in values:
-                flat.extend(value if isinstance(value, list) else [value])
-            record[name] = flat
+            if len(values) == 1 and isinstance(values[0], list):
+                # A single array container is unwrapped. Repeated containers
+                # stay as nested lists, so schema validation rejects them
+                # (docs/FHGFF3-MICRODATA.md H7).
+                record[name] = values[0]
+            else:
+                # Ordinary repeated properties form one flat list (M4).
+                record[name] = values
         elif len(values) == 1:
             record[name] = values[0]
         else:
@@ -280,27 +369,79 @@ def _read_scope(scope, root, subschema):
     return record
 
 
-def read_page(text, schema=None, schema_version=FHGFF3_SCHEMA_VERSION):
+def _release_schema(release):
+    filename = SUPPORTED_RELEASES.get(release)
+    if filename is None:
+        supported = ", ".join(sorted(SUPPORTED_RELEASES))
+        raise MicrodataError(
+            f"unsupported FHGFF3 schema release: {release} "
+            f"(this reader has FHGFF3 releases {supported})")
+    if filename not in _RELEASE_CACHE:
+        path = RELEASES_DIR / filename
+        try:
+            schema = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise MicrodataError(
+                f"cannot load released FHGFF3 schema {release}: {error}") from error
+        accepted = schema.get("properties", {}).get("schemaVersion", {}).get("enum")
+        if accepted is not None and FHGFF3_SCHEMA_VERSION not in accepted:
+            raise MicrodataError(
+                f"released FHGFF3 schema {release} does not accept "
+                f"schemaVersion {FHGFF3_SCHEMA_VERSION!r}")
+        _RELEASE_CACHE[filename] = schema
+    return _RELEASE_CACHE[filename]
+
+
+def resolve_schema(selection, schema):
+    """Resolve the FHGFF3 contract a record's ``schema`` value selects (H2).
+
+    ``schema`` is the reader's current (``main``) schema. A released URL selects
+    a fixed supported release; an unknown release or any other value is
+    unsupported-version and is rejected before extraction or validation.
+    """
+    if not isinstance(selection, str):
+        raise MicrodataError(f"unsupported FHGFF3 schema selection: {selection!r}")
+    raw = FHGFF3_SCHEMA_URL.match(selection)
+    if raw:
+        ref = raw.group(2)
+        return schema if ref == "main" else _release_schema(ref)
+    w3id = FHGFF3_W3ID_URL.match(selection)
+    if w3id:
+        return _release_schema(w3id.group(0).rstrip("/").rsplit("/", 1)[-1])
+    raise MicrodataError(f"unsupported FHGFF3 schema selection: {selection!r}")
+
+
+def _selected_schema(scope, schema):
+    for element, name in _property_elements(scope):
+        if name == "schema":
+            return resolve_schema(_value_of(element), schema)
+    raise MicrodataError("FHGFF3 item scope has no schema property")
+
+
+def read_page(text, schema=None):
     """Extract one FHGFF3 record from an HTML document.
 
-    ``schema`` is the parsed FHGFF3 JSON Schema, used for the untyped fallback
-    (M3); it may be omitted when every value carries ``data-fhr-type``. Raises
-    :class:`MicrodataError` for a document that is not a single, structurally
-    valid FHGFF3 item scope, for a `schema` that is not an FHGFF3 schema URL,
-    and for a `schemaVersion` the selected contract does not accept (V4).
+    ``schema`` is the parsed current (``main``) FHGFF3 JSON Schema; it may be
+    omitted when every value carries ``data-fhr-type``. The record's ``schema``
+    value selects the contract first: ``main`` uses ``schema``, a supported
+    release uses its released schema, and an unavailable release is rejected
+    before validation (H2, V1 to V4). Raises :class:`MicrodataError` for a
+    document that is not a single, structurally valid FHGFF3 item scope and for
+    a ``schemaVersion`` the selected contract does not accept.
     """
     root_schema = schema if schema is not None else {}
-    record = _read_scope(
-        _fhgff3_scope(text), root_schema, root_schema)
-    selected = record.get("schema")
-    if not isinstance(selected, str) or not (
-            FHGFF3_SCHEMA_URL.match(selected) or FHGFF3_W3ID_URL.match(selected)):
-        raise MicrodataError(f"unsupported FHGFF3 schema selection: {selected!r}")
+    scope = _fhgff3_scope(text)
+    selected_schema = _selected_schema(scope, root_schema)
+    record = _read_scope(scope, selected_schema, selected_schema)
+    accepted = _resolve(
+        selected_schema,
+        selected_schema.get("properties", {}).get("schemaVersion", {}),
+    ).get("enum")
     version = record.get("schemaVersion")
-    if version != schema_version:
+    if accepted is not None and version not in accepted:
         raise MicrodataError(
             f"unsupported FHGFF3 schemaVersion: {version!r} "
-            f"(this reader has {schema_version!r})")
+            f"(the selected schema accepts {accepted!r})")
     return record
 
 
@@ -351,20 +492,35 @@ def _yaml_lines(value, indent):
     lines = []
     if isinstance(value, dict):
         for key, item in value.items():
-            if isinstance(item, (dict, list)):
-                lines.append(f"{pad}{key}:")
-                lines.extend(_yaml_lines(item, indent + 2))
+            if isinstance(item, dict):
+                if item:
+                    lines.append(f"{pad}{key}:")
+                    lines.extend(_yaml_lines(item, indent + 2))
+                else:
+                    lines.append(f"{pad}{key}: {{}}")
+            elif isinstance(item, list):
+                if item:
+                    lines.append(f"{pad}{key}:")
+                    lines.extend(_yaml_lines(item, indent + 2))
+                else:
+                    lines.append(f"{pad}{key}: []")
             else:
                 lines.append(f"{pad}{key}: {_yaml_scalar(item)}")
     elif isinstance(value, list):
         for item in value:
             if isinstance(item, dict):
-                item_lines = _yaml_lines(item, indent + 2)
-                lines.append(f"{pad}- {item_lines[0].lstrip()}")
-                lines.extend(item_lines[1:])
+                if item:
+                    item_lines = _yaml_lines(item, indent + 2)
+                    lines.append(f"{pad}- {item_lines[0].lstrip()}")
+                    lines.extend(item_lines[1:])
+                else:
+                    lines.append(f"{pad}- {{}}")
             elif isinstance(item, list):
-                lines.append(f"{pad}-")
-                lines.extend(_yaml_lines(item, indent + 2))
+                if item:
+                    lines.append(f"{pad}-")
+                    lines.extend(_yaml_lines(item, indent + 2))
+                else:
+                    lines.append(f"{pad}- []")
             else:
                 lines.append(f"{pad}- {_yaml_scalar(item)}")
     return lines
