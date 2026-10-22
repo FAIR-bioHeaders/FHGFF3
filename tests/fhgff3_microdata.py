@@ -176,7 +176,11 @@ class _TreeBuilder(HTMLParser):
             self.stack.append(node)
 
     def handle_startendtag(self, tag, attrs):
-        self.stack[-1].children.append(_Node(tag, _first_wins(attrs)))
+        # In HTML the self-closing slash does not close a non-void element:
+        # ``<span .../>text</span>`` is a span containing that text, not an
+        # empty span. Handle it as an ordinary start tag; ``handle_starttag``
+        # already keeps only void elements out of the stack (M2).
+        self.handle_starttag(tag, attrs)
 
     def handle_endtag(self, tag):
         for index in range(len(self.stack) - 1, 0, -1):

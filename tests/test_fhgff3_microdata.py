@@ -8,10 +8,12 @@ schema validator in ``tests/mini_jsonschema.py``: both are test-only. The
 runtime reader and writer remain toolkit work (FAIR-bioHeaders-Tools#58), and
 the website consumer (fair-bioheaders.github.io#27) and family builder
 (fair-bioheaders.github.io#15) are coordinated, not shipped here. The vendored
-``tests/fixtures/fhgff3.json`` is a copy of the released shared schema, used
-only so the tests can say the extracted metadata validates against it.
+``tests/fixtures/releases/fhgff3-v0.4.0.json`` is a copy of the released shared
+schema, used only so the tests can say the extracted metadata validates against
+it.
 """
 
+from html import escape
 import json
 from pathlib import Path
 import sys
@@ -509,6 +511,59 @@ class FHGFF3MicrodataBindingTests(unittest.TestCase):
                 self.assertTrue(same_json(
                     fhgff3_microdata.read_page(explicit_page, SCHEMA), expected))
 
+    def test_self_closing_syntax_on_non_void_is_a_start_tag(self):
+        # In HTML the slash on <span/> is ignored: the element stays open and
+        # the following text belongs to it (M2). It is not an empty annotation.
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            '<span itemprop="annotation" data-fhr-type="string">',
+            '<span itemprop="annotation" data-fhr-type="string"/>', 1)
+        extracted = fhgff3_microdata.read_page(page, SCHEMA)
+        self.assertEqual(extracted["annotation"], self.minimal()["annotation"])
+        mini_jsonschema.validate(extracted, SCHEMA)
+
+        # The same applies inside an array: <li/> opens a list item holding the
+        # text after it, and the next <li> closes it through the omitted-end-tag
+        # rule. It is not an empty item followed by stray array text.
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            "</div>",
+            '<ul itemprop="identifier" data-fhr-type="array">'
+            '<li itemprop="item" data-fhr-type="string"/>ex:one'
+            '<li itemprop="item" data-fhr-type="string">ex:two</ul></div>', 1)
+        extracted = fhgff3_microdata.read_page(page, SCHEMA)
+        self.assertEqual(extracted["identifier"], ["ex:one", "ex:two"])
+
+    def test_genuine_void_elements_are_self_closing(self):
+        documentation = fhgff3_microdata._write_property(
+            "documentation", self.minimal()["documentation"])
+
+        # <meta/> is void and supplies its value from the content attribute.
+        content = escape(self.minimal()["documentation"], quote=True)
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            documentation,
+            f'<meta itemprop="documentation" content="{content}"/>', 1)
+        self.assertEqual(
+            fhgff3_microdata.read_page(page, SCHEMA)["documentation"],
+            self.minimal()["documentation"])
+
+        # <br/> stays an empty element and does not swallow the text after it.
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            documentation,
+            '<span itemprop="documentation" data-fhr-type="string">'
+            "before<br/>after</span>", 1)
+        self.assertEqual(
+            fhgff3_microdata.read_page(page, SCHEMA)["documentation"],
+            "beforeafter")
+
+        # <img/> is a void array item whose src is the value.
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            "</div>",
+            '<span itemprop="relatedLink" data-fhr-type="array">'
+            '<img itemprop="item" src="https://example.org/synthetic.png"/>'
+            "</span></div>", 1)
+        extracted = extract_page(page)
+        self.assertEqual(extracted["relatedLink"],
+                         ["https://example.org/synthetic.png"])
+
     def test_first_attribute_wins(self):
         page = fhgff3_microdata.write_page(self.minimal()).replace(
             '<span itemprop="annotation" data-fhr-type="string">',
@@ -523,6 +578,48 @@ class FHGFF3MicrodataBindingTests(unittest.TestCase):
         self.assertTrue(list(mini_jsonschema.iter_errors(
             dict(self.minimal(), featureCounts=[{"featureType": "gene", "count": "2"}]),
             SCHEMA)))
+
+
+class MiniJSONSchemaFormatTests(unittest.TestCase):
+    """The **test-only** validator's ``date`` and ``uri`` format checks.
+
+    ``tests/mini_jsonschema.py`` stands in for ``jsonschema`` in this
+    environment. These cases pin that its format checks reject impossible dates
+    and malformed URIs rather than matching a shape only; they do not add a
+    requirement to the published FHGFF3 contract.
+    """
+
+    def record(self, **changes):
+        return dict(load_record("minimal-reference.microdata.fhgff3.json"), **changes)
+
+    def test_valid_date_values_pass(self):
+        for value in ("2026-10-21", "2024-02-29"):
+            with self.subTest(value=value):
+                mini_jsonschema.validate(self.record(dateCreated=value), SCHEMA)
+
+    def test_invalid_date_values_fail(self):
+        for value in ("2026-99-99", "2026-02-30", "2023-02-29", "2026-1-1",
+                      "21-10-2026", "2026-10-21T00:00:00Z"):
+            with self.subTest(value=value):
+                with self.assertRaises(mini_jsonschema.ValidationError):
+                    mini_jsonschema.validate(self.record(dateCreated=value), SCHEMA)
+
+    def test_valid_uri_values_pass(self):
+        for value in ("https://example.org/synthetic",
+                      "https://identifiers.org/taxonomy:9606",
+                      "http://[::1]/synthetic",
+                      "mailto:example@example.org",
+                      "urn:isbn:0451450523"):
+            with self.subTest(value=value):
+                mini_jsonschema.validate(self.record(relatedLink=[value]), SCHEMA)
+
+    def test_invalid_uri_values_fail(self):
+        for value in ("http://[", "http://[]", "http://", "https://exa mple.org",
+                      "example.org/synthetic", "https://example.org:notaport/x",
+                      "https://exa<mple.org/synthetic"):
+            with self.subTest(value=value):
+                with self.assertRaises(mini_jsonschema.ValidationError):
+                    mini_jsonschema.validate(self.record(relatedLink=[value]), SCHEMA)
 
 
 class FHGFF3MicrodataArtifactTests(unittest.TestCase):

@@ -19,7 +19,9 @@ reviewed artifacts; this module only lets the tests say that the extracted
 metadata validates against the released ``fhgff3.json``.
 """
 
+from datetime import date
 import re
+from urllib.parse import urlsplit
 
 _TYPES = {
     "object": dict,
@@ -31,7 +33,50 @@ _TYPES = {
     "null": type(None),
 }
 _DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
-_URI = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
+_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*$")
+# Schemes that use an authority (host) and so need one to be a usable URI.
+_HIERARCHICAL_SCHEMES = {"http", "https", "ftp", "ftps", "ws", "wss"}
+_FORBIDDEN_HOST_CHARS = set('<>"{}|\\^`')
+
+
+def _is_date(value):
+    """RFC 3339 full-date: exact ``YYYY-MM-DD`` shape and a real calendar date.
+
+    Test-only: ``date.fromisoformat`` rejects impossible dates such as
+    ``2026-99-99`` or ``2026-02-30`` that a shape-only regex would accept.
+    """
+    if not _DATE.match(value):
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _is_uri(value):
+    """A syntactically usable URI, not just a scheme prefix.
+
+    Test-only stand-in for the JSON Schema ``uri`` format. ``urlsplit`` parses
+    the value so malformed IPv6 brackets and bad ports raise, and HTTP(S)-style
+    schemes must have a non-empty, whitespace-free host.
+    """
+    if any(char.isspace() or ord(char) < 0x20 or ord(char) == 0x7F
+           for char in value):
+        return False
+    try:
+        parts = urlsplit(value)
+        parts.port  # raises ValueError for a non-numeric or out-of-range port
+    except ValueError:
+        return False
+    if not _SCHEME.match(parts.scheme):
+        return False
+    if parts.scheme.lower() in _HIERARCHICAL_SCHEMES:
+        if not parts.netloc or not parts.hostname:
+            return False
+        if any(char in _FORBIDDEN_HOST_CHARS for char in parts.netloc):
+            return False
+    return True
 
 
 class ValidationError(ValueError):
@@ -129,9 +174,9 @@ def _iter(instance, subschema, root, path):
         if "pattern" in subschema and not re.search(subschema["pattern"], instance):
             yield ValidationError(
                 path, f"does not match pattern {subschema['pattern']!r}")
-        if subschema.get("format") == "date" and not _DATE.match(instance):
+        if subschema.get("format") == "date" and not _is_date(instance):
             yield ValidationError(path, "is not a date")
-        if subschema.get("format") == "uri" and not _URI.match(instance):
+        if subschema.get("format") == "uri" and not _is_uri(instance):
             yield ValidationError(path, "is not a URI")
 
     if isinstance(instance, dict):
