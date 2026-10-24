@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add always-reporting owned-documentation lint/local-link checks, scheduled and
+  manual external-link checks, manual parity diagnostics and a pinned shared
+  conformance job using released fair-bioheaders 0.8.1 (#8). Document why parity
+  replaces local schema generation/drift under the adopted mirror layout, while
+  inherited-model execution remains disabled pending #3. The parent #2 remains
+  open; copied header bytes and released contracts are unchanged.
+
 - **Draft/proposal.** Specify the FHGFF3 HTML microdata binding (FHGFF3#5).
   `docs/FHGFF3-MICRODATA.md` defines the FHGFF3 item scope and itemtype (the raw-main
   `fhgff3.json` URL, never the FHR itemtype), fixed-version schema selection, and a

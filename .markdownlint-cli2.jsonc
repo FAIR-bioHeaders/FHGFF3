@@ -1,0 +1,13 @@
+{
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD060": { "style": "compact" }
+  },
+  "globs": [
+    "AGENTS.md", "README.md", "CONTRIBUTING.md", "CHANGELOG.md",
+    "docs/FHGFF3-MICRODATA.md", "ci/**/*.md", "tests/fixtures/README.md",
+    "header/README.md", "header/PROVENANCE.md",
+    "header/docs/README.md", "header/conformance/README.md"
+  ]
+}

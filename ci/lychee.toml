@@ -1,0 +1,9 @@
+# Scope is the owned documentation listed by scripts/check_docs.py --list.
+max_concurrency = 2
+max_retries = 3
+retry_wait_time = 5
+timeout = 30
+accept = ["200..=299"]
+exclude = ['^mailto:']
+# The publisher blocks automated requests; check this exact DOI's Crossref record.
+remap = ['^https://doi\.org/10\.1093/bib/bbae122$ https://api.crossref.org/works/10.1093/bib/bbae122']

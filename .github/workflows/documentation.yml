@@ -1,0 +1,55 @@
+name: Documentation checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 13 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    name: Documentation lint and local links
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - name: Lint owned Markdown
+        run: npx --yes markdownlint-cli2@0.23.2 --config .markdownlint-cli2.jsonc
+      - name: Check local links, whitespace and conflict markers
+        run: python3 scripts/check_docs.py
+      - name: Test documentation checks
+        run: python3 -m unittest discover -s tests -p test_check_docs.py -v
+
+  external-links:
+    name: External documentation links
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: List owned documentation
+        id: docs
+        run: echo "paths=$(python3 scripts/check_docs.py --list | paste -sd ' ' -)" >> "$GITHUB_OUTPUT"
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
+        with:
+          lycheeVersion: v0.24.2
+          args: --config ci/lychee.toml --no-progress ${{ steps.docs.outputs.paths }}
+          fail: true
+          jobSummary: true
+          token: ${{ github.token }}
