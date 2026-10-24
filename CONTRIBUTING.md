@@ -44,6 +44,14 @@ This tree is inherited from the biodatamodels/gff-schema fork. Its upstream
 permissions are unresolved ([FHGFF3#3](https://github.com/FAIR-bioHeaders/FHGFF3/issues/3));
 do not reuse it or fold it into the `header/` tree until that is settled.
 
-## License of contributions
+## Checks before proposing a change
+
+Follow the [CI guide](ci/README.md) for exact commands and CI scope. Run the local
+documentation checks for guidance changes, the existing unittest suite for test
+or tooling changes, and header parity before proposing a pin update. The shared
+publication checkout owns schema generation and drift baselines. No inherited
+model generation is enabled while its upstream permissions remain unresolved.
+
+## Contribution licensing
 
 FAIR BioHeaders contributions use [MPL-2.0](LICENSE), subject to the scope and preserved permissions stated there. This does **not** license the inherited biodatamodels/gff-schema material: no upstream root license was present in the inspected checkout, and upstream permissions remain to be clarified. New contributions must have the rights needed for their declared license; retain source notices.

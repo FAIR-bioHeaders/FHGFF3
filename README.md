@@ -51,7 +51,16 @@ feature model. Start with [`header/README.md`](header/README.md).
   the GFF3 features themselves. A header never makes the features valid.
 - The archived FHT-File-Converter is not an active dependency.
 
-### Tracking
+### Contributor checks
+
+Run `python3 -m unittest discover -s tests -v`,
+`python3 scripts/check_header_parity.py`, `python3 scripts/check_docs.py`, and
+`npx markdownlint-cli2@0.23.2 --config .markdownlint-cli2.jsonc` from this root.
+See [the CI guide](ci/README.md) for the exact shared conformance and external-link
+commands, runtime versions, owned-documentation scope and inherited-model boundary.
+These checks also run for documentation-only PRs.
+
+### Issue links
 
 - Family layout tracker:
   [FAIR-bioHeaders-Specification#107](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/issues/107)
