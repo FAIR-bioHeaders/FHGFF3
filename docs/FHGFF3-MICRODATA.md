@@ -1,18 +1,24 @@
 # FHGFF3 HTML microdata (draft binding)
 
-**Status: draft proposal, not released.** This document defines the type-specific
-FHGFF3 binding for HTML microdata. It is developed in FHGFF3 (issue #5) and must be
-published through
-[FAIR-bioHeaders-Specification](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification)
-before it is adopted. No FHGFF3 release, tag or DOI is created here. The toolkit reader
-and writer are **not** shipped in this repository; they remain toolkit work
-([FAIR-bioHeaders-Tools#58](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools/issues/58)).
+**Status: draft proposal, not released; shared publication step complete.** This
+document defines the type-specific FHGFF3 binding for HTML microdata. It is developed
+in FHGFF3 (issue #5). The shared-publication step it awaited happened on 2026-11-10:
+[FAIR-bioHeaders-Specification#216](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/issues/216)
+was ruled (reading 1) and published by
+[#217](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/pull/217), and
+the shared
+[MICRODATA.md](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/blob/main/docs/MICRODATA.md)
+Type-specific bindings table now names this document as the canonical binding for
+FHGFF3 HTML microdata. That naming is documentation, not adoption: adoption remains a
+joint-maintainer act and no FHGFF3 release, tag or DOI is created here. The toolkit
+reader and writer are **not** shipped in this repository; the toolkit still refuses
+FHGFF3 microdata and the runtime remains toolkit work
+([FAIR-bioHeaders-Tools#104](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools/issues/104)).
 The website consumer
 ([fair-bioheaders.github.io#27](https://github.com/FAIR-bioHeaders/fair-bioheaders.github.io/pull/27))
 is coordinated with this binding and is not updated by it: the annotation HTML added by
-that PR deliberately carries no microdata until this contract is published and the
-toolkit reader exists. Its readable annotation tables stay consistent with any embedded
-metadata they describe.
+that PR deliberately carries no microdata until the toolkit reader exists. Its readable
+annotation tables stay consistent with any embedded metadata they describe.
 
 This binding **reuses** the family rules in
 [MICRODATA.md](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/blob/main/docs/MICRODATA.md)
