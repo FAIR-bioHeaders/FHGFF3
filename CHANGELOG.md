@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **Re-pin `header/` to the shared v0.6.0 release** (FAIR-bioHeaders-Specification
+  `0ae18b00ee4bd71ab2dc28bae706b0f9d195076b`, the `v0.6.0` tag commit). The byte copy
+  moves from `bdcaecf7` (2026-10-21, pre-v0.5.0): all 39 previously copied files were
+  re-extracted from the new pin, 10 `fhgff3` conformance vectors added (3 valid —
+  `fhgff3-busco-lineage-dotted`, `fhgff3-extension-fields`,
+  `fhgff3-version-3-trailing-whitespace` — and 7 invalid — the R15/J-family extension
+  rejections, the G1 `##gff-version` near misses and `fhgff3-busco-lineage-trailing-dot`),
+  nothing deleted; `header/provenance.json` now lists 49 copied files with recomputed
+  sizes and SHA-256 digests. The recorded imports move `schemas/shared.yaml`
+  `0e7e08d5…` → `19afd1d8…` (the #170 dotted-`lineageDataset` widening, FHGFF3 1.2),
+  `conformance/manifest.json` and `docs/FORMAT.md` to their v0.6.0 digests;
+  `schemas/core.yaml` is unchanged (`2bd657ec…`). Local companion records updated to
+  match: `header/PROVENANCE.md` (pin block and 49-row file table),
+  `header/docs/README.md` (pinned-commit URLs), `header/conformance/README.md`
+  (vector counts 18 valid / 20 invalid and the cited rule census).
+  `.github/workflows/header-parity.yml`'s shared-conformance toolkit baseline moves from
+  fair-bioheaders 0.8.1 to 0.11.0, the release that bundles v0.6.0: the pinned
+  upstream suite fails under 0.8.1 (it predates the v0.5.0 schema citations and the
+  G1 grammar enforcement) and passes 291/291 under 0.11.0. No hand-editing of copied
+  bytes; no schema-contract change in this repository. Refs FAIR-bioHeaders-Specification#222, #170.
+
 - Add always-reporting owned-documentation lint/local-link checks, scheduled and
   manual external-link checks, manual parity diagnostics and a pinned shared
   conformance job using released fair-bioheaders 0.8.1 (#8). Document why parity
