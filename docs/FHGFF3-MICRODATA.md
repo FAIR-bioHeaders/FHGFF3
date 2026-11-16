@@ -11,14 +11,22 @@ the shared
 Type-specific bindings table now names this document as the canonical binding for
 FHGFF3 HTML microdata. That naming is documentation, not adoption: adoption remains a
 joint-maintainer act and no FHGFF3 release, tag or DOI is created here. The toolkit
-reader and writer are **not** shipped in this repository; the toolkit still refuses
-FHGFF3 microdata and the runtime remains toolkit work
-([FAIR-bioHeaders-Tools#104](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools/issues/104)).
+reader and writer are **not** shipped in this repository. They are implemented in
+[FAIR-bioHeaders-Tools](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools)
+([#139](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools/pull/139));
+released fair-bioheaders 0.11.0 reads and writes FHGFF3 microdata with an explicit
+experimental-binding warning. Runtime availability does not adopt this draft.
+Joint maintainer adoption and binding release remain separate requirements;
+[PR #16](https://github.com/FAIR-bioHeaders/FHGFF3/pull/16) recorded canonical
+documentation, not adoption. The warning remains until adoption and release.
+[Tools#140](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools/issues/140)
+tracks reader hardening and accurate experimental disclosure.
 The website consumer
 ([fair-bioheaders.github.io#27](https://github.com/FAIR-bioHeaders/fair-bioheaders.github.io/pull/27))
 is coordinated with this binding and is not updated by it: the annotation HTML added by
-that PR deliberately carries no microdata until the toolkit reader exists. Its readable
-annotation tables stay consistent with any embedded metadata they describe.
+that PR deliberately carries no microdata. Runtime support now exists, but website
+export still awaits the binding publication and reader/writer acceptance handoff.
+Its readable annotation tables stay consistent with any embedded metadata they describe.
 
 This binding **reuses** the family rules in
 [MICRODATA.md](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/blob/main/docs/MICRODATA.md)
@@ -269,12 +277,15 @@ the R, M, J, P and G rules.
 
 ## What remains outside this document
 
-- **Toolkit reader and writer**: FAIR-bioHeaders-Tools#58. FHGFF3 HTML microdata output
-  is still unsupported until that work lands.
+- **Toolkit reader and writer**: implemented in FAIR-bioHeaders-Tools#139 and
+  available in fair-bioheaders 0.11.0 with an experimental-binding warning.
+  Tools#140 covers follow-up hardening. Keep the warning until joint maintainer
+  adoption and binding release; merged PR #16 documented the canonical link only.
 - **Website binding**: fair-bioheaders.github.io#27, with the family builder in
   fair-bioheaders.github.io#15. The annotation forms and readable tables added by website
-  PR #27 stay microdata-free until this contract is published and the toolkit reader
-  exists. Website microdata export is enabled only after the binding and the reader/writer
-  round-trip tests pass.
+  PR #27 stay microdata-free until this contract is published and the toolkit
+  handoff is accepted. Website microdata export is enabled only after the binding
+  and the reader/writer round-trip tests pass.
 - **Publication**: this draft must be reviewed and published through
-  FAIR-bioHeaders-Specification before any of the above treats it as adopted.
+  FAIR-bioHeaders-Specification before any consumer treats it as adopted.
+  Experimental runtime support is separate from that publication.

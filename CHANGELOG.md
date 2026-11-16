@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Correct the binding's runtime handoff: fair-bioheaders 0.11.0 already reads
+  and writes FHGFF3 microdata with an experimental-binding warning. Preserve
+  the separate binding-publication and website-enablement gates (Tools#140).
+
 - **Re-pin `header/` to the shared v0.6.0 release** (FAIR-bioHeaders-Specification
   `0ae18b00ee4bd71ab2dc28bae706b0f9d195076b`, the `v0.6.0` tag commit). The byte copy
   moves from `bdcaecf7` (2026-10-21, pre-v0.5.0): all 39 previously copied files were
@@ -56,13 +60,14 @@
   compare the readable table with the embedded metadata and reject the negatives.
 
   This is a proposal for review and publication through FAIR-bioHeaders-Specification.
-  The runtime reader and writer remain toolkit work
-  ([FAIR-bioHeaders-Tools#58](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools/issues/58));
+  The runtime reader and writer were subsequently implemented in
+  [FAIR-bioHeaders-Tools#139](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools/pull/139)
+  and are available in fair-bioheaders 0.11.0 with an experimental-binding warning;
   the website consumer
   ([fair-bioheaders.github.io#27](https://github.com/FAIR-bioHeaders/fair-bioheaders.github.io/pull/27))
   and family builder (fair-bioheaders.github.io#15) are coordinated, not shipped, and
-  FHGFF3 HTML microdata output is still unsupported. Website microdata export is enabled
-  only after this binding and the round-trip tests pass.
+  website microdata export remains gated. It is enabled only after this binding
+  is published and the reader/writer round-trip tests pass.
 
   `.gitignore` no longer hides the hand-written binding document (`docs/*md` still
   ignores the generated docs). The inherited feature-model tree
