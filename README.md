@@ -36,8 +36,8 @@ feature model. Start with [`header/README.md`](header/README.md).
   The model (`fhgff3_linkml.yml`), the generated schema (`fhgff3.json`), the
   documentation, examples and vectors live there. Released schemas are served
   from `https://w3id.org/fair-bioheaders/fhgff3/vX.Y.Z` — currently
-  [v0.4.0](https://w3id.org/fair-bioheaders/fhgff3/v0.4.0), `schemaVersion`
-  `"1.0"`. This repository publishes no schemas.
+  [v0.6.0](https://w3id.org/fair-bioheaders/fhgff3/v0.6.0), `schemaVersion`
+  `"1.2"`. This repository publishes no schemas.
 - **Pinned provenance:** `header/` is a byte-for-byte copy pinned to a recorded
   commit of the shared repository ([`header/provenance.json`](header/provenance.json),
   [`header/PROVENANCE.md`](header/PROVENANCE.md)). `scripts/check_header_parity.py`
