@@ -94,11 +94,19 @@ python3 scripts/check_header_parity.py
 python3 scripts/check_header_parity.py --upstream /path/to/FAIR-bioHeaders-Specification
 ```
 
-The check fails on any changed, missing or unlisted file. To move the pin
+The check fails on any changed, missing or unlisted file anywhere under
+`header/` (only `header/README.md`, `header/PROVENANCE.md`,
+`header/provenance.json`, `header/docs/README.md` and
+`header/conformance/README.md` are local), and on a pin whose `source.ref` is not a
+release tag (`vX.Y.Z`). With `--upstream` it also requires that tag to resolve to
+`source.commit`; the checkout therefore needs the tag (CI checks out the tag
+itself). The weekly scheduled CI run repeats the check. To move the pin
 deliberately:
 
-1. Choose the new `FAIR-bioHeaders-Specification` commit — the commit of the
-   current release tag, or a reviewed `main` commit between releases.
+1. Choose the new `FAIR-bioHeaders-Specification` release tag, record it as
+   `source.ref` and record its commit as `source.commit`. Released material
+   resolves at its tag, never at `main`
+   ([FAIR-bioHeaders-Specification#241](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/issues/241)).
 2. Re-copy the upstream paths above byte-for-byte (do not edit them in place).
 3. Recompute every size and SHA-256 digest in `header/provenance.json`.
 4. Run `scripts/check_header_parity.py --upstream <checkout>` until it passes.

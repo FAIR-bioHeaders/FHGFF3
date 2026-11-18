@@ -14,6 +14,14 @@ checkout is found next to this one (or in ``FAIR_BIOHEADERS_SPECIFICATION``) the
 live comparison runs automatically; ``--no-upstream`` forces the digest-only
 check.
 
+The pin itself is checked too. ``source.ref`` must name a release tag
+(``vX.Y.Z``), never a branch such as ``main``: the copy mirrors released
+material, which resolves at its tag (shared AGENTS.md, reference classes,
+FAIR-bioHeaders-Specification#241). With an upstream checkout the tag must
+also resolve to ``source.commit``. Every file under ``header/`` must be either
+a listed copy or one of the few local files named in ``LOCAL_FILES``, so an
+unlisted file anywhere in the tree fails, not only in the copied directories.
+
 Any divergence (a changed, missing or unlisted file, or a wrong pin) exits
 non-zero. Nothing here edits the copy; see header/PROVENANCE.md for how to update
 it deliberately.
@@ -24,25 +32,26 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 PROVENANCE = ROOT / "header" / "provenance.json"
-# Directories that must contain exactly the copied files, no more and no less.
-STRICT_DIRS = (
-    "header/model",
-    "header/docs",
-    "header/examples/fhgff3",
-    "header/conformance/valid",
-    "header/conformance/invalid",
-)
-# Local-only files that are allowed alongside the copied files in a strict
-# directory. header/docs/README.md is the landing page and link map for the
-# byte-exact copy; it is intentionally not part of the pinned set.
-ALLOWED_EXTRAS = frozenset({
+# The tree that must contain exactly the copied files plus LOCAL_FILES.
+HEADER_DIR = "header"
+# Local-only files that are allowed alongside the copied files. They describe
+# the copy (landing pages, link maps and the provenance record) and are
+# intentionally not part of the pinned set.
+LOCAL_FILES = frozenset({
+    "header/README.md",
+    "header/PROVENANCE.md",
+    "header/provenance.json",
     "header/docs/README.md",
+    "header/conformance/README.md",
 })
+# Released material resolves at a release tag (FAIR-bioHeaders-Specification#241).
+RELEASE_TAG = re.compile(r"v[0-9]+\.[0-9]+\.[0-9]+")
 UPSTREAM_ENV = "FAIR_BIOHEADERS_SPECIFICATION"
 
 
@@ -84,21 +93,51 @@ def check_local(prov):
 
 
 def check_extras(listed):
-    """Fail on files present in the strict directories but not in provenance."""
+    """Fail on files under header/ that are neither copies nor LOCAL_FILES."""
     errors = []
-    for rel_dir in STRICT_DIRS:
-        directory = ROOT / rel_dir
-        if not directory.is_dir():
-            continue
-        expected = {p for p in listed if p.startswith(rel_dir + "/")}
-        actual = {
-            str(p.relative_to(ROOT))
-            for p in directory.rglob("*")
-            if p.is_file()
-        }
-        for extra in sorted(actual - expected - ALLOWED_EXTRAS):
-            errors.append(f"unlisted file: {extra}")
+    for local in sorted(listed):
+        if not local.startswith(HEADER_DIR + "/"):
+            errors.append(f"copied file outside {HEADER_DIR}/: {local}")
+    directory = ROOT / HEADER_DIR
+    if not directory.is_dir():
+        return errors
+    actual = {
+        p.relative_to(ROOT).as_posix()
+        for p in directory.rglob("*")
+        if p.is_file() or p.is_symlink()
+    }
+    for extra in sorted(actual - set(listed) - LOCAL_FILES):
+        errors.append(f"unlisted file: {extra}")
     return errors
+
+
+def check_ref(prov):
+    """The recorded ref must be a release tag, never a branch."""
+    ref = prov.get("source", {}).get("ref")
+    if not isinstance(ref, str) or not RELEASE_TAG.fullmatch(ref):
+        return [f"source.ref {ref!r} is not a release tag (vX.Y.Z); released "
+                "material resolves at its tag, never at a branch"]
+    return []
+
+
+def check_ref_resolves(prov, repo):
+    """The recorded release tag must resolve to the recorded commit upstream."""
+    ref = prov["source"].get("ref")
+    commit = prov["source"]["commit"]
+    if not isinstance(ref, str) or not RELEASE_TAG.fullmatch(ref):
+        return []  # Already reported by check_ref.
+    result = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--verify", "--quiet",
+         f"refs/tags/{ref}^{{commit}}"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return [f"tag {ref} is not in {repo} (fetch the tag to check the pin)"]
+    resolved = result.stdout.strip()
+    if resolved != commit:
+        return [f"tag {ref} resolves to {resolved[:12]}..., "
+                f"not the pinned commit {commit[:12]}..."]
+    return []
 
 
 def find_upstream(explicit):
@@ -178,13 +217,16 @@ def main(argv=None):
     print(f"  {len(prov.get('copied', []))} copied files, "
           f"{len(prov.get('imports', []))} recorded imports")
 
+    print(f"  ref {prov['source'].get('ref')!r}")
     errors, listed = check_local(prov)
     errors += check_extras(listed)
+    errors += check_ref(prov)
 
     upstream = None if args.no_upstream else find_upstream(args.upstream)
     if upstream is not None:
         upstream_errors, checked = check_upstream(prov, upstream)
         errors += upstream_errors
+        errors += check_ref_resolves(prov, upstream)
         print(f"  compared against pinned bytes in {upstream} "
               f"({checked} files)")
     elif args.upstream:

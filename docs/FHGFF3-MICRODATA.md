@@ -1,21 +1,24 @@
 # FHGFF3 HTML microdata (draft binding)
 
-**Status: draft proposal, not released; shared publication step complete.** This
+**Status: draft binding, not adopted and not released.** Its shared documentation
+step is complete; joint maintainer adoption and a binding release are not. This
 document defines the type-specific FHGFF3 binding for HTML microdata. It is developed
-in FHGFF3 (issue #5). The shared-publication step it awaited happened on 2026-11-10:
+in FHGFF3 (issue #5). The shared documentation step happened on 2026-11-10:
 [FAIR-bioHeaders-Specification#216](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/issues/216)
 was ruled (reading 1) and published by
 [#217](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/pull/217), and
 the shared
 [MICRODATA.md](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/blob/main/docs/MICRODATA.md)
 Type-specific bindings table now names this document as the canonical binding for
-FHGFF3 HTML microdata. That naming is documentation, not adoption: adoption remains a
-joint-maintainer act and no FHGFF3 release, tag or DOI is created here. The toolkit
+FHGFF3 HTML microdata. That naming is documentation, not adoption or release: adoption
+remains a joint-maintainer act, the binding is released only through
+FAIR-bioHeaders-Specification, and no FHGFF3 release, tag or DOI is created here. The toolkit
 reader and writer are **not** shipped in this repository. They are implemented in
 [FAIR-bioHeaders-Tools](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools)
 ([#139](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Tools/pull/139));
-released fair-bioheaders 0.11.0 reads and writes FHGFF3 microdata with an explicit
-experimental-binding warning. Runtime availability does not adopt this draft.
+fair-bioheaders 0.10.0 (released 2026-11-12) was the first release to read and write
+FHGFF3 microdata, with an explicit experimental-binding warning
+(`ExperimentalMicrodataWarning`); 0.11.0 and 0.12.0 keep the warning. Runtime availability does not adopt this draft.
 Joint maintainer adoption and binding release remain separate requirements;
 [PR #16](https://github.com/FAIR-bioHeaders/FHGFF3/pull/16) recorded canonical
 documentation, not adoption. The warning remains until adoption and release.
@@ -25,7 +28,8 @@ The website consumer
 ([fair-bioheaders.github.io#27](https://github.com/FAIR-bioHeaders/fair-bioheaders.github.io/pull/27))
 is coordinated with this binding and is not updated by it: the annotation HTML added by
 that PR deliberately carries no microdata. Runtime support now exists, but website
-export still awaits the binding publication and reader/writer acceptance handoff.
+export still awaits adoption and release of this binding and the reader/writer
+acceptance handoff.
 Its readable annotation tables stay consistent with any embedded metadata they describe.
 
 This binding **reuses** the family rules in
@@ -77,9 +81,12 @@ win.
 - A `schema` value that is not an FHGFF3 schema URL, a release the reader does not have,
   or a `schemaVersion` the selected schema does not accept is **unsupported-version**.
   The document is rejected; it is not checked against another schema, and it is never
-  silently treated as FHR. The released FHGFF3 contract is `schemaVersion` `"1.0"`, a
-  quoted string; a reader uses the selected schema's own `schemaVersion` rule, and a
-  writer copies the value the record already has.
+  silently treated as FHR. The released FHGFF3 contracts are `schemaVersion` `"1.0"`
+  (v0.4.0 to v0.4.2), `"1.1"` (v0.5.0, extension fields) and `"1.2"` (v0.6.0, dotted
+  BUSCO dataset versions), each a quoted string. Each release's schema also accepts the
+  earlier values, never a later one: a v0.5.0 record that states `"1.2"` is
+  unsupported-version. A reader uses the selected schema's own `schemaVersion` rule,
+  and a writer copies the value the record already has.
 - The `schema` and `schemaVersion` properties are ordinary properties; they are the same
   values the YAML, JSON and GFF3 header forms carry.
 
@@ -93,7 +100,7 @@ the FHGFF3 shape; the shared rules (M1 to M4, R7, R9) apply unchanged.
 | Field | JSON type | Microdata shape | Notes |
 | --- | --- | --- | --- |
 | `schema` | string | string | An FHGFF3 schema URL; selects the version (H2). |
-| `schemaVersion` | string `"1.0"` | typed scalar | The value the selected schema accepts. |
+| `schemaVersion` | string `"1.0"`, `"1.1"` or `"1.2"` | typed scalar | The value the selected schema accepts. |
 | `annotation` | string | string | Required. The annotation's name. |
 | `taxon` | object | one item scope | `name` and `uri` strings. |
 | `version` | string | string | The annotation's own version. |
@@ -180,8 +187,9 @@ construction.
 - [H6] A property that is present with the value `0` is a value, and is kept. It is not
   the same as an omitted property, and a reader must not drop it or rewrite it as absent.
   The same holds for an empty array: `identifier: []` is present.
-- FHGFF3 `schemaVersion` `"1.0"` defines no boolean property. If one is added, `false` is
-  a value and `data-fhr-type="boolean"` keeps it; absence is omission only.
+- FHGFF3 `schemaVersion` `"1.0"` to `"1.2"` define no boolean property. If one is
+  added, `false` is a value and `data-fhr-type="boolean"` keeps it; absence is omission
+  only.
 - Text and attribute values are escaped and decoded once, exactly as M2 and M3 require.
   Unicode, whitespace and character references round-trip unchanged. `data-fhr-type`
   keeps a number-like string a string, and keeps a typed `integer`, `number`, `boolean` or
@@ -199,6 +207,18 @@ construction.
   `checksum` and the other scalars and single objects) is therefore invalid, and so is a
   repeated array container. The extracted metadata must validate against the selected
   FHGFF3 schema.
+
+## Extension fields
+
+- Shared rule M5 applies unchanged
+  ([MICRODATA.md](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/blob/main/docs/MICRODATA.md),
+  [FORMAT.md](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/blob/main/docs/FORMAT.md)
+  R15). From FHGFF3 `"1.1"` a JSON or YAML record may carry top-level `x-` extension
+  fields, but microdata carries none: a writer leaves every top-level `x-` key out, with
+  its value, and reports the keys it left out. A document whose FHGFF3 item has an
+  `itemprop` that starts with `x-` is invalid, even where the selected schema would
+  accept the key in JSON or YAML. A microdata round trip therefore drops extension
+  fields; use JSON or YAML to keep them.
 
 ## The readable table
 
@@ -262,14 +282,19 @@ invented.
 standard library `html.parser`; `tests/mini_jsonschema.py` is a test-only subset validator
 so the tests can check the extracted metadata against the released `fhgff3.json` without a
 `jsonschema` dependency. Neither is shipped and neither is a runtime parser. The reader
-carries an explicit fixed-release map (`v0.4.0` and `v0.4.1`, both the same FHGFF3 `"1.0"`
-contract) and rejects any release it does not have instead of falling back to its local
-copy. `tests/test_fhgff3_microdata.py` checks that the fixtures extract back to their
+carries an explicit fixed-release map (`v0.4.0`, `v0.4.1` and `v0.4.2` share the FHGFF3
+`"1.0"` schema bytes; `v0.5.0` is `"1.1"` and `v0.6.0` is `"1.2"`) and rejects any release
+it does not have instead of falling back to its local copy. The raw-main URL selects the
+current schema, which the tests take to be the v0.6.0 release. `tests/test_fhgff3_microdata.py` checks that the fixtures extract back to their
 canonical records, that the writer reproduces the committed HTML and the canonical
 JSON/YAML, that the readable table matches the embedded metadata, that repeated array
 containers stay nested and fail validation, that script content never supplies metadata,
-and that the negative fixtures are rejected. `tests/fixtures/releases/fhgff3-v0.4.0.json`
-is a copy of the released shared schema used only by these tests.
+that the shared v0.6.0 example (`header/examples/fhgff3/minimal-reference.fhgff3.json`,
+FHGFF3 `"1.2"`) round-trips, that each release accepts only its own and earlier contract
+versions, that extension fields are left out by the writer and rejected by the reader,
+and that the negative fixtures are rejected. `tests/fixtures/releases/fhgff3-v0.4.0.json`,
+`fhgff3-v0.5.0.json` and `fhgff3-v0.6.0.json` are byte copies of the released shared
+schemas (their SHA-256 digests are asserted), used only by these tests.
 
 The rule ids H1 to H8 are stable labels local to this document. They add no requirements
 beyond the text above and are not part of the shared conformance manifest, which covers
@@ -278,14 +303,15 @@ the R, M, J, P and G rules.
 ## What remains outside this document
 
 - **Toolkit reader and writer**: implemented in FAIR-bioHeaders-Tools#139 and
-  available in fair-bioheaders 0.11.0 with an experimental-binding warning.
+  available since fair-bioheaders 0.10.0 with an experimental-binding warning.
   Tools#140 covers follow-up hardening. Keep the warning until joint maintainer
   adoption and binding release; merged PR #16 documented the canonical link only.
 - **Website binding**: fair-bioheaders.github.io#27, with the family builder in
   fair-bioheaders.github.io#15. The annotation forms and readable tables added by website
-  PR #27 stay microdata-free until this contract is published and the toolkit
-  handoff is accepted. Website microdata export is enabled only after the binding
+  PR #27 stay microdata-free until this binding is adopted and released and the
+  toolkit handoff is accepted. Website microdata export is enabled only after the binding
   and the reader/writer round-trip tests pass.
-- **Publication**: this draft must be reviewed and published through
-  FAIR-bioHeaders-Specification before any consumer treats it as adopted.
-  Experimental runtime support is separate from that publication.
+- **Adoption and release**: the shared documentation step is done (see the status
+  note at the top); joint maintainer adoption and a binding release through
+  FAIR-bioHeaders-Specification are not, and no consumer treats this draft as adopted
+  before both. Experimental runtime support is separate from adoption and release.

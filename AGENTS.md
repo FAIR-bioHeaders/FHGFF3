@@ -192,10 +192,15 @@ material. That implementation moved the FHGM transport overlay (1,363 → 2,613
 bytes, `dd9f69274f26…` → `d1619cced91b…`) and the FHGM suite manifest (35,269 →
 36,001 bytes, `31f14f022ff0…` → `5620f00cbb4b…`) **with the vector count
 unchanged at 31** — which is why suite references must be pinned by digest and
-never by count. Promoting the real-data cases to normative vectors is still in
-progress (FHGM-Specification #18). Re-verify before restating: this paragraph
-was written 2026-11-16 and its own status claim goes stale the moment upstream
-moves, as it did once already. FHGM remains a draft under rule V7 and is not a
+never by count. Promotion of the real-data cases into the
+normative suite went through FHGM-Specification #18 (merged 2026-11-16); read
+that repository's `development/conformance/manifest.json` for the current vector
+count and digest rather than trusting any figure in this paragraph. **Status
+sentences decay faster than the guidance around them:** this line originally said
+promotion was "still in progress" and was contradicted by a merge about 3 hours 35 minutes
+later, the second such event in two days. So the durable form is *where to look*,
+not *what was true when written* - every byte count and digest quoted above is a
+dated measurement, not a live value. FHGM remains a draft under rule V7 and is not a
 header type: no `schemaVersion`, no `schemas/versions.json` row, no w3id URL.
 
 ## Using FAIR-bioHeaders in another project
@@ -232,6 +237,15 @@ python scripts/check_linkml.py
 python scripts/check_schema_drift.py
 python scripts/make_jsonld.py --check
 ```
+
+FHGFF3 local checks (local to this repository): the commands above belong to
+the shared publication tree and do not exist here. In FHGFF3 run `python3 -m
+unittest discover -s tests -v` (header-parity and typed-microdata tests),
+`python3 scripts/check_header_parity.py --upstream PATH` against a
+FAIR-bioHeaders-Specification checkout that has the pinned tag, `python3
+scripts/check_docs.py`, and `npx markdownlint-cli2@0.23.2 --config
+.markdownlint-cli2.jsonc`; [`ci/README.md`](ci/README.md) gives the pinned shared
+conformance commands that `.github/workflows/header-parity.yml` also runs.
 
 Use the checkout's requirements files to prepare the environment when needed.
 Check legacy and new valid/rejected instances, all affected header types, typed
@@ -276,10 +290,13 @@ this file in step across all six specification repositories — the shared
 publication repository and the FHR, FHP, FHT, FHGFF3 and FHGM development
 repositories — modulo declared per-repository link adaptations: a repository
 may substitute an absolute shared-specification URL where a relative path does
-not resolve in its own tree. A repository may also carry sections that describe
+not resolve in its own tree. FHP-Specification's existing absolute links to the
+shared schema-selection rules and version registry are also permitted, even
+though those paths exist locally. A repository may also carry sections that describe
 only its own tree (currently the shared repository's "Draft metadata profiles
-(#56)" section, FHR-Specification's development-tree paragraph, and
-FHGM-Specification's local-development-scope section); never delete another
+(#56)" section, FHR-Specification's development-tree paragraph,
+FHGM-Specification's local-development-scope section, and FHGFF3's
+local-checks paragraph under Verification); never delete another
 repository's local section. Port only intended shared-guidance changes and
 record the shared source commit; comparisons of the shared sections across
 repositories are advisory, not a gate. The byte-identity requirement for these

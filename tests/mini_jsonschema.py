@@ -8,7 +8,8 @@ has no ``jsonschema`` distribution (the ``jsonschema/`` directory in this tree
 is the inherited generated feature model, not the library). This module is a
 **test-only**, standard-library stand-in that supports exactly the keywords the
 FHGFF3 schema uses: ``$ref``/``$defs``, ``type``, ``properties``, ``required``,
-``additionalProperties: false``, ``items``, ``contains``/``minContains``,
+``patternProperties``, ``additionalProperties: false``, ``propertyNames``,
+``items``, ``contains``/``minContains``,
 ``enum``, ``const``, ``pattern``, ``minLength``/``maxLength``, ``minimum``,
 ``anyOf``, ``allOf``, ``not`` and ``if``/``then``, plus the ``date`` and ``uri``
 formats.
@@ -37,6 +38,17 @@ _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*$")
 # Schemes that use an authority (host) and so need one to be a usable URI.
 _HIERARCHICAL_SCHEMES = {"http", "https", "ftp", "ftps", "ws", "wss"}
 _FORBIDDEN_HOST_CHARS = set('<>"{}|\\^`')
+
+
+def _search(pattern, text):
+    """ECMA-262 ``pattern`` search: a final ``$`` matches only at the very end.
+
+    Python's ``$`` also matches before a trailing line feed, which would let
+    ``"x-a\\n"`` pass ``^x-...$``; JSON Schema patterns use ECMA-262 semantics.
+    """
+    if pattern.endswith("$") and not pattern.endswith("\\$"):
+        pattern = pattern[:-1] + r"\Z"
+    return re.search(pattern, text)
 
 
 def _is_date(value):
@@ -171,7 +183,7 @@ def _iter(instance, subschema, root, path):
         if "maxLength" in subschema and len(instance) > subschema["maxLength"]:
             yield ValidationError(
                 path, f"is longer than maxLength {subschema['maxLength']}")
-        if "pattern" in subschema and not re.search(subschema["pattern"], instance):
+        if "pattern" in subschema and not _search(subschema["pattern"], instance):
             yield ValidationError(
                 path, f"does not match pattern {subschema['pattern']!r}")
         if subschema.get("format") == "date" and not _is_date(instance):
@@ -184,14 +196,22 @@ def _iter(instance, subschema, root, path):
             if name not in instance:
                 yield ValidationError(path, f"is missing the required property {name!r}")
         properties = subschema.get("properties", {})
-        if subschema.get("additionalProperties") is False:
-            for name in instance:
-                if name not in properties:
-                    yield ValidationError(
-                        path, f"has the additional property {name!r}")
+        patterns = subschema.get("patternProperties", {})
         for name, value in instance.items():
+            matched = False
             if name in properties:
+                matched = True
                 yield from _iter(value, properties[name], root, f"{path}/{name}")
+            for pattern, pattern_schema in patterns.items():
+                if _search(pattern, name):
+                    matched = True
+                    yield from _iter(value, pattern_schema, root, f"{path}/{name}")
+            if not matched and subschema.get("additionalProperties") is False:
+                yield ValidationError(path, f"has the additional property {name!r}")
+        if "propertyNames" in subschema:
+            for name in instance:
+                yield from _iter(name, subschema["propertyNames"], root,
+                                 f"{path}/{name}")
 
     if isinstance(instance, list):
         items = subschema.get("items")
