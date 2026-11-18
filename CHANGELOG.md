@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+- **HTML binding brought up to the v0.6.0 pin.** The test-only microdata reader
+  now carries every released FHGFF3 contract: v0.4.0 to v0.4.2 (`"1.0"`), v0.5.0
+  (`"1.1"`) and v0.6.0 (`"1.2"`), with byte copies of the released schemas under
+  `tests/fixtures/releases/` and their digests asserted. Writing then reading the
+  shared v0.6.0 example `header/examples/fhgff3/minimal-reference.fhgff3.json`
+  previously failed with "unsupported FHGFF3 schema release: v0.6.0"; it now
+  round-trips. `docs/FHGFF3-MICRODATA.md` names the three contract versions and
+  adopts shared rule M5: the writer leaves top-level `x-` extension fields out and
+  reports them, and the reader rejects an `x-` itemprop. The test validator learned
+  `patternProperties` and `propertyNames`, with ECMA-262 end anchoring. No schema,
+  header copy or released byte changes.
+- **Binding status made consistent.** The document said both that the shared
+  publication step was complete and that website export awaited publication. It
+  now separates the completed shared documentation step from the outstanding
+  joint-maintainer adoption and binding release. The toolkit runtime is dated to
+  its first release: fair-bioheaders 0.10.0 (2026-11-12) already read and wrote
+  FHGFF3 microdata with `ExperimentalMicrodataWarning`; 0.11.0 and 0.12.0 keep it.
+- **Header parity checks the pin, not only the bytes.** `source.ref` must be a
+  release tag (`vX.Y.Z`); with an upstream checkout the tag must resolve to
+  `source.commit` (FAIR-bioHeaders-Specification#241). Every file under `header/`
+  is now covered, not only the copied directories. CI checks out the pinned tag and
+  runs weekly on a schedule.
+- **Guidance.** AGENTS.md lists the checks that exist in this repository and ports
+  two shared-guidance changes from FAIR-bioHeaders-Specification: the
+  "where to look" form of the FHGM real-data paragraph (`e11a9bf`, #245) and the
+  FHP absolute-links sentence (`659115c`, #233). `header/docs/README.md` cites
+  R1–R15, the range at the pinned v0.6.0 release. `ci/README.md` records the
+  0.11.0 toolkit baseline that CI actually installs.
+
 - Correct the binding's runtime handoff: fair-bioheaders 0.11.0 already reads
   and writes FHGFF3 microdata with an experimental-binding warning. Preserve
   the separate binding-publication and website-enablement gates (Tools#140).
