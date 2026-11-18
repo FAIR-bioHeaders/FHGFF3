@@ -7,7 +7,8 @@ Implements the draft binding in ``docs/FHGFF3-MICRODATA.md`` on top of the
 shared rules M1 to M4 and R9 in the family ``docs/MICRODATA.md`` and R7 and R9
 in ``docs/FORMAT.md``. It is deliberately small and standard-library only
 (``html.parser``, ``json``, ``re``). It is **not** a runtime parser: the reader
-and writer shipped to users stay in the toolkit (FAIR-bioHeaders-Tools#58).
+and writer shipped to users are in the toolkit (FAIR-bioHeaders-Tools#139,
+experimental in fair-bioheaders since 0.10.0).
 Tests use it to prove that the committed examples round-trip to their canonical
 records, that the readable table matches the embedded metadata, and that the
 negative fixtures are rejected.
@@ -24,6 +25,7 @@ from pathlib import Path
 import re
 from html import escape
 from html.parser import HTMLParser
+import warnings
 
 # The raw-main FHGFF3 schema URL is the record's itemtype identity
 # (docs/SCHEMA-VERSIONS.md; docs/MICRODATA.md M1). The pre-rename repository
@@ -50,17 +52,35 @@ FHGFF3_W3ID_URL = re.compile(
     r"^https://w3id\.org/fair-bioheaders/fhgff3/v[0-9]+\.[0-9]+\.[0-9]+/?$"
 )
 
-# The released FHGFF3 contract is schemaVersion "1.0" (schemas/versions.json).
-FHGFF3_SCHEMA_VERSION = "1.0"
-
-# Fixed releases this reader carries. They are copies of released schemas, not
-# fetched at run time (docs/SCHEMA-VERSIONS.md V2 to V4). v0.4.1 carries the
-# same FHGFF3 schema contract as v0.4.0.
+# Fixed releases this reader carries, each with the FHGFF3 contract version it
+# introduced (the shared schemas/versions.json). They are copies of released
+# schemas, not fetched at run time (docs/SCHEMA-VERSIONS.md V2 to V4). v0.4.1
+# and v0.4.2 carry the same FHGFF3 "1.0" schema bytes as v0.4.0; v0.5.0 carries
+# FHGFF3 "1.1" (extension fields, FORMAT.md R15) and v0.6.0 carries FHGFF3 "1.2"
+# (dotted BUSCO dataset versions). Each later schema still accepts the earlier
+# schemaVersion values; the selected schema's own enum decides (H2).
 RELEASES_DIR = Path(__file__).resolve().parent / "fixtures" / "releases"
 SUPPORTED_RELEASES = {
     "v0.4.0": "fhgff3-v0.4.0.json",
     "v0.4.1": "fhgff3-v0.4.0.json",
+    "v0.4.2": "fhgff3-v0.4.0.json",
+    "v0.5.0": "fhgff3-v0.5.0.json",
+    "v0.6.0": "fhgff3-v0.6.0.json",
 }
+RELEASE_SCHEMA_VERSIONS = {
+    "v0.4.0": "1.0",
+    "v0.4.1": "1.0",
+    "v0.4.2": "1.0",
+    "v0.5.0": "1.1",
+    "v0.6.0": "1.2",
+}
+# The newest released FHGFF3 contract (schemas/versions.json at v0.6.0).
+FHGFF3_SCHEMA_VERSION = RELEASE_SCHEMA_VERSIONS["v0.6.0"]
+
+# Extension fields (FORMAT.md R15) are top-level keys starting with "x-".
+# Microdata never carries them (docs/MICRODATA.md M5): the writer leaves them
+# out and reports them, and the reader rejects an FHGFF3 item that has one.
+EXTENSION_PREFIX = "x-"
 _RELEASE_CACHE = {}
 
 # Elements whose end tag HTML implies (docs/MICRODATA.md M2). The values are
@@ -388,10 +408,11 @@ def _release_schema(release):
             raise MicrodataError(
                 f"cannot load released FHGFF3 schema {release}: {error}") from error
         accepted = schema.get("properties", {}).get("schemaVersion", {}).get("enum")
-        if accepted is not None and FHGFF3_SCHEMA_VERSION not in accepted:
+        expected = RELEASE_SCHEMA_VERSIONS[release]
+        if accepted is not None and expected not in accepted:
             raise MicrodataError(
                 f"released FHGFF3 schema {release} does not accept "
-                f"schemaVersion {FHGFF3_SCHEMA_VERSION!r}")
+                f"schemaVersion {expected!r}")
         _RELEASE_CACHE[filename] = schema
     return _RELEASE_CACHE[filename]
 
@@ -446,7 +467,23 @@ def read_page(text, schema=None):
         raise MicrodataError(
             f"unsupported FHGFF3 schemaVersion: {version!r} "
             f"(the selected schema accepts {accepted!r})")
+    extensions = extension_keys(record)
+    if extensions:
+        # M5: rejected even where the selected schema accepts the key in JSON
+        # or YAML, so an HTML page never holds values the standard does not
+        # define.
+        raise MicrodataError(
+            "HTML microdata carries no extension fields "
+            f"(docs/MICRODATA.md M5): {', '.join(repr(k) for k in extensions)}")
     return record
+
+
+def extension_keys(record):
+    """The top-level keys of ``record`` that start with ``x-``, in order (M5)."""
+    if not isinstance(record, dict):
+        return []
+    return [key for key in record
+            if isinstance(key, str) and key.startswith(EXTENSION_PREFIX)]
 
 
 def _fhgff3_scope(text):
@@ -596,8 +633,22 @@ def table_rows(record):
     return rows
 
 
-def write_page(record, itemtype=FHGFF3_ITEMTYPE, title="FHGFF3 microdata example"):
-    """Write one record as a standalone HTML document with a readable table."""
+def write_page(record, itemtype=FHGFF3_ITEMTYPE, title="FHGFF3 microdata example",
+               left_out=None):
+    """Write one record as a standalone HTML document with a readable table.
+
+    Extension fields are left out with their values (M5). Their keys are
+    reported: appended to ``left_out`` when a list is given, and always
+    announced with a :class:`UserWarning`.
+    """
+    omitted = extension_keys(record)
+    if omitted:
+        if left_out is not None:
+            left_out.extend(omitted)
+        warnings.warn(
+            "extension fields are not written to HTML microdata: "
+            + ", ".join(omitted), UserWarning, stacklevel=2)
+        record = {key: value for key, value in record.items() if key not in omitted}
     content = "".join(_write_property(name, value) for name, value in record.items())
     rows = "".join(
         f"<tr><td>{escape(label)}</td><td>{escape(value)}</td></tr>"

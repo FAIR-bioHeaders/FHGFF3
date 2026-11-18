@@ -5,19 +5,22 @@
 
 The reader and writer live in ``tests/fhgff3_microdata.py`` and the small
 schema validator in ``tests/mini_jsonschema.py``: both are test-only. The
-runtime reader and writer remain toolkit work (FAIR-bioHeaders-Tools#58), and
-the website consumer (fair-bioheaders.github.io#27) and family builder
-(fair-bioheaders.github.io#15) are coordinated, not shipped here. The vendored
-``tests/fixtures/releases/fhgff3-v0.4.0.json`` is a copy of the released shared
-schema, used only so the tests can say the extracted metadata validates against
-it.
+runtime reader and writer are toolkit work (FAIR-bioHeaders-Tools#139,
+experimental in fair-bioheaders since 0.10.0), and the website consumer
+(fair-bioheaders.github.io#27) and family builder (fair-bioheaders.github.io#15)
+are coordinated, not shipped here. The vendored
+``tests/fixtures/releases/fhgff3-v*.json`` files are copies of the released
+shared schemas, used only so the tests can say the extracted metadata validates
+against them.
 """
 
 from html import escape
+import hashlib
 import json
 from pathlib import Path
 import sys
 import unittest
+import warnings
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
@@ -31,9 +34,29 @@ FHR_ITEMTYPE = (
 )
 EXAMPLES = ROOT / "examples" / "fhgff3"
 DOC = ROOT / "docs" / "FHGFF3-MICRODATA.md"
-SCHEMA = json.loads(
-    (ROOT / "tests" / "fixtures" / "releases" / "fhgff3-v0.4.0.json")
-    .read_text(encoding="utf-8"))
+RELEASES = ROOT / "tests" / "fixtures" / "releases"
+HEADER_EXAMPLES = ROOT / "header" / "examples" / "fhgff3"
+
+
+def load_release(name):
+    return json.loads((RELEASES / name).read_text(encoding="utf-8"))
+
+
+SCHEMA_040 = load_release("fhgff3-v0.4.0.json")
+SCHEMA_050 = load_release("fhgff3-v0.5.0.json")
+SCHEMA_060 = load_release("fhgff3-v0.6.0.json")
+# The reader's current (raw-main) schema is the latest release, v0.6.0.
+SCHEMA = SCHEMA_060
+# SHA-256 of each vendored file; they equal fhgff3.json at the shared release
+# tags (`git show vX.Y.Z:fhgff3.json | sha256sum` in FAIR-bioHeaders-Specification).
+VENDORED_DIGESTS = {
+    "fhgff3-v0.4.0.json":
+        "f89635f252f6e204944de99e6c40bad1b0c9b37af5108fce05ee63f6dfd40bbd",
+    "fhgff3-v0.5.0.json":
+        "20ce320f5d706f11ed21cdece4dfb56e3568b50be126e25b4016f46f2e8e416c",
+    "fhgff3-v0.6.0.json":
+        "1942be4cefc8b3a2537942c2252b45fbcef87a5532486e4fd0f5d4c540e0fbf9",
+}
 
 RELEASE_040 = (
     "https://raw.githubusercontent.com/FAIR-bioHeaders/"
@@ -44,6 +67,13 @@ RELEASE_041 = (
     "https://raw.githubusercontent.com/FAIR-bioHeaders/"
     "FAIR-bioHeaders-Specification/v0.4.1/fhgff3.json"
 )
+RELEASE_042_W3ID = "https://w3id.org/fair-bioheaders/fhgff3/v0.4.2"
+RELEASE_050_W3ID = "https://w3id.org/fair-bioheaders/fhgff3/v0.5.0"
+RELEASE_060 = (
+    "https://raw.githubusercontent.com/FAIR-bioHeaders/"
+    "FAIR-bioHeaders-Specification/v0.6.0/fhgff3.json"
+)
+RELEASE_060_W3ID = "https://w3id.org/fair-bioheaders/fhgff3/v0.6.0"
 CHECKSUM = "A" * 43 + "="
 
 # The committed valid HTML fixtures and the canonical record each one pins.
@@ -109,7 +139,8 @@ class FHGFF3MicrodataFixtureTests(unittest.TestCase):
             with self.subTest(fixture=html):
                 expected = load_record(record_name)
                 self.assertTrue(same_json(read_fixture(html), expected))
-                mini_jsonschema.validate(expected, SCHEMA)
+                mini_jsonschema.validate(expected, fhgff3_microdata.resolve_schema(
+                    expected["schema"], SCHEMA))
 
     def test_committed_html_is_the_writer_output(self):
         for html, record_name in VALID_FIXTURES.items():
@@ -624,11 +655,34 @@ class MiniJSONSchemaFormatTests(unittest.TestCase):
 
 class FHGFF3MicrodataArtifactTests(unittest.TestCase):
     def test_vendored_schema_is_the_released_contract(self):
-        self.assertEqual(SCHEMA["$id"], FHGFF3_ITEMTYPE)
-        self.assertEqual(SCHEMA["$schema"],
-                         "https://json-schema.org/draft/2020-12/schema")
-        self.assertEqual(SCHEMA["properties"]["schemaVersion"]["enum"], ["1.0"])
-        self.assertEqual(SCHEMA["required"][:1], ["schema"])
+        for schema, enum in ((SCHEMA_040, ["1.0"]),
+                             (SCHEMA_050, ["1.0", "1.1"]),
+                             (SCHEMA_060, ["1.0", "1.1", "1.2"])):
+            with self.subTest(enum=enum):
+                self.assertEqual(schema["$id"], FHGFF3_ITEMTYPE)
+                self.assertEqual(schema["$schema"],
+                                 "https://json-schema.org/draft/2020-12/schema")
+                self.assertEqual(schema["properties"]["schemaVersion"]["enum"], enum)
+                self.assertEqual(schema["required"][:1], ["schema"])
+
+    def test_vendored_schemas_are_the_release_bytes(self):
+        self.assertEqual(
+            sorted(p.name for p in RELEASES.glob("*.json")), sorted(VENDORED_DIGESTS))
+        for name, digest in VENDORED_DIGESTS.items():
+            with self.subTest(file=name):
+                self.assertEqual(
+                    hashlib.sha256((RELEASES / name).read_bytes()).hexdigest(), digest)
+
+    def test_release_map_covers_every_released_fhgff3_contract(self):
+        # schemas/versions.json at the shared v0.6.0 tag: FHGFF3 1.0 in
+        # v0.4.0 to v0.4.2, 1.1 in v0.5.0 and 1.2 in v0.6.0.
+        self.assertEqual(fhgff3_microdata.RELEASE_SCHEMA_VERSIONS, {
+            "v0.4.0": "1.0", "v0.4.1": "1.0", "v0.4.2": "1.0",
+            "v0.5.0": "1.1", "v0.6.0": "1.2",
+        })
+        self.assertEqual(set(fhgff3_microdata.SUPPORTED_RELEASES),
+                         set(fhgff3_microdata.RELEASE_SCHEMA_VERSIONS))
+        self.assertEqual(fhgff3_microdata.FHGFF3_SCHEMA_VERSION, "1.2")
 
     def test_binding_document_exists_and_names_the_itemtype(self):
         self.assertTrue(DOC.is_file(), "docs/FHGFF3-MICRODATA.md is missing")
@@ -655,11 +709,19 @@ class FHGFF3MicrodataArtifactTests(unittest.TestCase):
     def test_resolve_schema_maps_releases_to_fixed_contracts(self):
         # The raw-main URL selects the reader's current schema.
         self.assertIs(fhgff3_microdata.resolve_schema(FHGFF3_ITEMTYPE, SCHEMA), SCHEMA)
-        for selected in (RELEASE_040, RELEASE_040_W3ID, RELEASE_041):
+        for selected, enum in (
+            (RELEASE_040, ["1.0"]),
+            (RELEASE_040_W3ID, ["1.0"]),
+            (RELEASE_041, ["1.0"]),
+            (RELEASE_042_W3ID, ["1.0"]),
+            (RELEASE_050_W3ID, ["1.0", "1.1"]),
+            (RELEASE_060, ["1.0", "1.1", "1.2"]),
+            (RELEASE_060_W3ID, ["1.0", "1.1", "1.2"]),
+        ):
             with self.subTest(schema=selected):
                 resolved = fhgff3_microdata.resolve_schema(selected, SCHEMA)
                 self.assertEqual(
-                    resolved["properties"]["schemaVersion"]["enum"], ["1.0"])
+                    resolved["properties"]["schemaVersion"]["enum"], enum)
         for selected in (
             "https://raw.githubusercontent.com/FAIR-bioHeaders/"
             "FAIR-bioHeaders-Specification/v9.9.9/fhgff3.json",
@@ -668,6 +730,111 @@ class FHGFF3MicrodataArtifactTests(unittest.TestCase):
             with self.subTest(schema=selected):
                 with self.assertRaises(fhgff3_microdata.MicrodataError):
                     fhgff3_microdata.resolve_schema(selected, SCHEMA)
+
+
+class FHGFF3MicrodataCurrentReleaseTests(unittest.TestCase):
+    """FHGFF3 1.1 and 1.2 records (shared v0.5.0 and v0.6.0) round-trip."""
+
+    def minimal(self, schema=RELEASE_060_W3ID, version="1.2", **extra):
+        record = {
+            "schema": schema,
+            "schemaVersion": version,
+            "annotation": "Synthetic annotation",
+            "taxon": {"name": "Homo sapiens",
+                      "uri": "https://identifiers.org/taxonomy:9606"},
+            "version": "1.0.0",
+            "metadataAuthor": [{"name": "Synthetic author (placeholder)"}],
+            "dateCreated": "2026-11-18",
+            "genomeReference": {"accession": "SYNTHETIC_ASSEMBLY.1",
+                                "seqcol_id": "S" * 32},
+            "checksum": CHECKSUM,
+        }
+        record.update(extra)
+        return record
+
+    def round_trip(self, record):
+        return extract_page(fhgff3_microdata.write_page(record))
+
+    def test_shared_v060_example_round_trips(self):
+        # header/examples/fhgff3/minimal-reference.fhgff3.json is the shared
+        # v0.6.0 example (FHGFF3 1.2), copied byte-for-byte under header/.
+        record = json.loads(
+            (HEADER_EXAMPLES / "minimal-reference.fhgff3.json").read_text(encoding="utf-8"))
+        self.assertEqual(record["schemaVersion"], "1.2")
+        self.assertTrue(same_json(self.round_trip(record), record))
+
+    def test_each_release_reads_its_own_contract_version(self):
+        for schema, version in (
+            (RELEASE_042_W3ID, "1.0"),
+            (RELEASE_050_W3ID, "1.1"),
+            (RELEASE_060, "1.2"),
+            (RELEASE_060_W3ID, "1.2"),
+            (FHGFF3_ITEMTYPE, "1.2"),
+        ):
+            with self.subTest(schema=schema, version=version):
+                record = self.minimal(schema=schema, version=version)
+                self.assertTrue(same_json(self.round_trip(record), record))
+
+    def test_a_release_rejects_a_later_contract_version(self):
+        for schema, version in ((RELEASE_040_W3ID, "1.1"),
+                                (RELEASE_042_W3ID, "1.2"),
+                                (RELEASE_050_W3ID, "1.2")):
+            with self.subTest(schema=schema, version=version):
+                with self.assertRaises(fhgff3_microdata.MicrodataError):
+                    fhgff3_microdata.read_page(fhgff3_microdata.write_page(
+                        self.minimal(schema=schema, version=version)), SCHEMA)
+
+    def test_dotted_busco_dataset_needs_fhgff3_1_2(self):
+        completeness = {"lineageDataset": "diptera_odb12.1", "completeSingle": 1,
+                        "completeDuplicated": 0, "fragmented": 0, "missing": 0,
+                        "total": 1}
+        record = self.minimal(completeness=completeness)
+        self.assertTrue(same_json(self.round_trip(record), record))
+        older = self.minimal(schema=RELEASE_050_W3ID, version="1.1",
+                             completeness=completeness)
+        with self.assertRaises(mini_jsonschema.ValidationError):
+            self.round_trip(older)
+
+    def test_writer_leaves_extension_fields_out_and_reports_them(self):
+        # M5: the schema accepts x- keys in JSON and YAML from FHGFF3 1.1, but
+        # microdata never carries them.
+        record = self.minimal(**{"x-lab": {"run": 7}, "x-note": "kept in JSON"})
+        mini_jsonschema.validate(record, SCHEMA_060)
+        left_out = []
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            page = fhgff3_microdata.write_page(record, left_out=left_out)
+        self.assertEqual(left_out, ["x-lab", "x-note"])
+        self.assertTrue(any("x-lab, x-note" in str(w.message) for w in caught))
+        self.assertNotIn("x-lab", page)
+        self.assertNotIn("kept in JSON", page)
+        expected = {k: v for k, v in record.items() if not k.startswith("x-")}
+        self.assertTrue(same_json(extract_page(page), expected))
+
+    def test_writer_without_extension_fields_does_not_warn(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            fhgff3_microdata.write_page(self.minimal())
+
+    def test_reader_rejects_an_extension_itemprop(self):
+        page = fhgff3_microdata.write_page(self.minimal()).replace(
+            '<span itemprop="checksum"',
+            '<span itemprop="x-lab" data-fhr-type="string">v</span>'
+            '<span itemprop="checksum"', 1)
+        self.assertIn('itemprop="x-lab"', page)
+        with self.assertRaisesRegex(fhgff3_microdata.MicrodataError, "M5"):
+            fhgff3_microdata.read_page(page, SCHEMA)
+
+    def test_mini_validator_reads_extension_patterns_like_json_schema(self):
+        mini_jsonschema.validate(self.minimal(**{"x-a": 1}), SCHEMA_060)
+        for key in ("x-", "x-a\n", "x-a b"):
+            with self.subTest(key=key):
+                with self.assertRaises(mini_jsonschema.ValidationError):
+                    mini_jsonschema.validate(self.minimal(**{key: 1}), SCHEMA_060)
+        # FHGFF3 1.0 has no extension fields, even under the v0.6.0 schema.
+        with self.assertRaises(mini_jsonschema.ValidationError):
+            mini_jsonschema.validate(
+                self.minimal(version="1.0", **{"x-a": 1}), SCHEMA_060)
 
 
 if __name__ == "__main__":
