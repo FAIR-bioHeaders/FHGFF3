@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Weekly: re-check the pinned tag, the copy and the released toolkit
+    # baseline even when nothing in this repository changes.
+    - cron: '41 13 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -24,15 +28,18 @@ jobs:
           python-version: '3.13'
       - name: Test the header parity check
         run: python3 -m unittest discover -s tests -v
-      - name: Read the pinned shared revision
+      - name: Read the pinned shared release tag
         id: pin
         run: |
-          echo "commit=$(python3 -c 'import json; print(json.load(open("header/provenance.json"))["source"]["commit"])')" >> "$GITHUB_OUTPUT"
-      - name: Check out the pinned shared publication revision
+          echo "ref=$(python3 -c 'import json; print(json.load(open("header/provenance.json"))["source"]["ref"])')" >> "$GITHUB_OUTPUT"
+      - name: Check out the pinned shared release tag
+        # Checking out the tag (not the commit) brings refs/tags/<ref> into the
+        # checkout, so the parity check can require it to resolve to the
+        # recorded commit (FAIR-bioHeaders-Specification#241).
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: FAIR-bioHeaders/FAIR-bioHeaders-Specification
-          ref: ${{ steps.pin.outputs.commit }}
+          ref: refs/tags/${{ steps.pin.outputs.ref }}
           path: .upstream/FAIR-bioHeaders-Specification
           persist-credentials: false
       - name: Check the header development copy against the pinned revision

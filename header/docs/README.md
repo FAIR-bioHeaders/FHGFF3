@@ -30,8 +30,10 @@ replace the commit with `main` for the current version.
 | `FORMAT.md` | not present locally | [FORMAT.md](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/blob/0ae18b00ee4bd71ab2dc28bae706b0f9d195076b/docs/FORMAT.md) |
 | `../specs/007-gff3-header/plan.md` | not present locally | [plan.md](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/blob/0ae18b00ee4bd71ab2dc28bae706b0f9d195076b/specs/007-gff3-header/plan.md) |
 
-The header rules also rely on the shared format rules (R1–R12) in the publication
-repository's `docs/FORMAT.md`, linked above.
+The header rules also rely on the shared format rules (R1–R15 at the pinned v0.6.0
+release) in the publication repository's `docs/FORMAT.md`, linked above. R16
+(assembly statistics) was added on shared `main` after v0.6.0 and is not part of
+this pin.
 
 ## Navigating this copy locally
 

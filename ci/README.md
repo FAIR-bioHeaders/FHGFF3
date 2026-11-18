@@ -10,18 +10,21 @@ validation boundaries. This implements the remaining CI scope in
 | Stable job name | Local equivalent | Evidence |
 | --- | --- | --- |
 | Documentation lint and local links | `npx markdownlint-cli2@0.23.2 --config .markdownlint-cli2.jsonc` then `python3 scripts/check_docs.py` | Owned Markdown lint, existing local file targets, whitespace and conflict markers |
-| Header parity and typed microdata fixtures | `python3 -m unittest discover -s tests -v` then `python3 scripts/check_header_parity.py --upstream ../FAIR-bioHeaders-Specification` | Parity failure tests, typed microdata positive/rejection tests, and exact pinned source bytes |
+| Header parity and typed microdata fixtures | `python3 -m unittest discover -s tests -v` then `python3 scripts/check_header_parity.py --upstream ../FAIR-bioHeaders-Specification` (a checkout that has the pinned tag) | Parity failure tests, typed microdata positive/rejection tests, exact pinned source bytes, no unlisted file under `header/`, and a `source.ref` release tag that resolves to `source.commit` |
 | Pinned shared header conformance | Commands below, in a disposable pinned shared checkout | Shared generated vectors, independent checksums and released toolkit acceptance/rejection |
 | External documentation links | `lychee --config ci/lychee.toml --no-progress $(python3 scripts/check_docs.py --list)` | Scheduled/manual HTTP checks; failures remain failures |
 
 CI uses Ubuntu 24.04, Python 3.13 and Node 24. Actions are pinned to commits;
 markdownlint-cli2 is pinned to 0.23.2 and Lychee to 0.24.2. The conformance toolkit baseline
-is the shared suite's fair-bioheaders 0.8.1 release, with its JSON-LD extra.
+is fair-bioheaders 0.11.0, with its JSON-LD extra: the release the shared
+repository's own workflow pins for the v0.6.0 schemas recorded in
+`header/provenance.json`.
 Transitive package dependencies resolve from that release's declared constraints;
 this is a released-version baseline, not a fully hash-locked environment.
 
 Both workflows run on all PRs targeting `main` and pushes to `main`, with no
-path-filtered pending checks. Both allow manual dispatch. Permissions are read-only,
+path-filtered pending checks. Both allow manual dispatch, and both also run every
+Monday on a schedule, so a moved tag or a toolkit regression surfaces without a PR. Permissions are read-only,
 checkout credentials are not persisted, and every job has a timeout. External
 links run on Monday and manual dispatch only; their absence on a PR means **not
 run**, not verified. Branch protection remains a maintainer decision after actual
@@ -52,13 +55,16 @@ by itself. Read the uploaded action summary before interpreting network failures
 
 Use a disposable checkout of FAIR-bioHeaders-Specification at `source.commit` in
 [`header/provenance.json`](../header/provenance.json), not current shared main.
-From that checkout, run the same commands as CI:
+From that checkout, run the same commands as CI (the converter environment lives
+beside the checkout, not in a shared temporary directory, and `--converter` takes
+an absolute path):
 
 ```sh
 python3 scripts/check_conformance.py
-python3 -m venv /tmp/fhgff3-converter
-/tmp/fhgff3-converter/bin/python -m pip install 'fair-bioheaders[jsonld]==0.8.1'
-python3 scripts/check_conformance.py --skip-regeneration --require-format jsonld --require-format fhp-fasta --require-format fhgff3 --converter /tmp/fhgff3-converter
+CONVERTER="$(cd .. && pwd)/fhgff3-converter"
+python3 -m venv "$CONVERTER"
+"$CONVERTER/bin/python" -m pip install 'fair-bioheaders[jsonld]==0.11.0'
+python3 scripts/check_conformance.py --skip-regeneration --require-format jsonld --require-format fhp-fasta --require-format fhgff3 --converter "$CONVERTER"
 ```
 
 The existing shared suite checks all its formats, including the FHGFF3 vectors
