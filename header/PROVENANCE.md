@@ -107,6 +107,9 @@ deliberately:
    `source.ref` and record its commit as `source.commit`. Released material
    resolves at its tag, never at `main`
    ([FAIR-bioHeaders-Specification#241](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/issues/241)).
+   Decision D7 confirms this release-pinned lane; reviewed shared-main drafts
+   are not an alternate source for these copies. Any future draft snapshot must
+   have a separately reviewed class, commit and digest; none is introduced here.
 2. Re-copy the upstream paths above byte-for-byte (do not edit them in place).
 3. Recompute every size and SHA-256 digest in `header/provenance.json`.
 4. Run `scripts/check_header_parity.py --upstream <checkout>` until it passes.
@@ -116,9 +119,9 @@ deliberately:
 ## Licensing
 
 The copied files come from the MPL-2.0 shared publication repository. This
-repository's `LICENSE` inventory does not yet enumerate the header tree;
-maintainers should add it when merging. The inherited biodatamodels/gff-schema
+repository's `LICENSE` inventory records these copies through their upstream
+provenance; retain the source's applicable notices and permissions. The inherited biodatamodels/gff-schema
 feature model is excluded from that grant and its upstream permissions remain
-unresolved
-([FAIR-bioHeaders/FHGFF3#3](https://github.com/FAIR-bioHeaders/FHGFF3/issues/3));
+unresolved. The selected [no-reuse boundary](../README.md#inherited-material-no-reuse-boundary)
+retains that snapshot without authorizing downstream reuse;
 no file here comes from it. Historical notices are preserved unchanged.
