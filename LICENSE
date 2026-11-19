@@ -13,6 +13,17 @@ MPL-2.0-covered FAIR BioHeaders contributions:
 - The “License of contributions” section of CONTRIBUTING.md, added in
   commit 413de2f.
 
+- The Round 14 declared-reference audit additions (2026-11-19), specifically:
+  .github/workflows/reference-audit.yml;
+  scripts/reference_audit.py;
+  scripts/check_reference_audit_controls.py;
+  tests/test_reference_audit.py;
+  references/checker.json;
+  references/README.md;
+  and only the added "references/*.md" glob in .markdownlint-cli2.jsonc.
+  These independently authored additions do not license the inherited model,
+  the rest of an existing file, or copied header material under a new grant.
+
 The standard MPL text below is Mozilla's license text, not a claim of
 FAIR BioHeaders authorship. Future contributions are covered by this
 policy only when their files or portions are identified in this
