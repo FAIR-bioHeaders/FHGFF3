@@ -55,3 +55,11 @@ currency, biological validity or a new contract release. Other consumers still
 need their own actual rollout before the federation-wide issue can close.
 
 Controlling source repository/URL declarations are validated before normalization; missing or unexpected authorities refuse the run instead of being silently replaced with the publication authority. Historical observations and namespace `$id` values are not retrieval inputs.
+
+The bootstrap disables Git replacement objects, verifies exact committed bytes,
+and executes a private snapshot of those verified bytes until the subprocess
+finishes. A later change to the source checkout cannot change that executable.
+Identifiable missing revision/path/digest declarations remain incomplete data for
+the central engine's ABSENT classification; supplied floating references remain
+DRIFT inputs. Conflicting source authorities or malformed supplied metadata
+refuse normalization, with an observable QUERY_FAILED execution fallback.
