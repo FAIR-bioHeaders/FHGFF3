@@ -63,6 +63,8 @@ def literal_assignments(root, name, wanted):
 def declarations(root):
     name = 'header/provenance.json'
     data = load(root, name); source = data['source']
+    if not isinstance(source, dict) or source.get('repository') != AUTHORITY:
+        raise ValueError(name + ': missing or unexpected source repository')
     files = [measured_file(e['local'], e['upstream'], e['sha256']) for e in data['copied']]
     rows = [reference('released-header-tree', 'copied-tree', source['ref'], files,
                       source['commit'], materialStatus='released', localTree='header',
