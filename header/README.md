@@ -65,14 +65,17 @@ The copied files under `header/` come from the MPL-2.0 shared publication
 repository. The new FAIR BioHeaders files here (this README, `PROVENANCE.md`,
 `provenance.json`, `scripts/check_header_parity.py` and the CI workflow) are
 MPL-2.0 under the organization's policy and this repository's
-[`LICENSE`](../LICENSE). This repository's `LICENSE` inventory does not yet
-enumerate the header tree; maintainers should add it when merging.
+[`LICENSE`](../LICENSE). The inventory now records copied header material
+through its shared-source provenance; the locally authored support files remain
+distinct from those copies.
 
 The inherited gff-schema feature model is **excluded** from that grant and its
 upstream permissions remain unresolved
-([FHGFF3#3](https://github.com/FAIR-bioHeaders/FHGFF3/issues/3)). Do not reuse it
-or fold it into this tree until that is settled. Historical notices are preserved
-unchanged.
+([FHGFF3#3](https://github.com/FAIR-bioHeaders/FHGFF3/issues/3)). The selected
+[no-reuse boundary](../README.md#inherited-material-no-reuse-boundary) retains
+that history without making it reusable or an independent-header completion
+gate. Do not fold it into this tree without evidenced permission and a new
+reviewed scope decision. Historical notices are preserved unchanged.
 
 ## Related issues
 
