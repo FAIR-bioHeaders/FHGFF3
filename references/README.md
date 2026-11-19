@@ -6,7 +6,7 @@ The adapter reads this repository's **current owning declarations** on every run
 it does not score the central inventory's older snapshot or change any pin.
 
 `checker.json` pins the accepted shared checker by source commit and SHA-256.
-The runner verifies the checkout HEAD and script bytes before execution. The
+The runner verifies the approved repository, full commit, canonical nonsymlink path, checkout HEAD, immutable `git show <commit>:<path>` bytes and script digest before execution. The working file must equal that committed blob even if both it and the recorded digest were tampered with. The verified engine runs under Python `-I`, isolating unverified adjacent modules. The
 engine is not copied here. Schema, model, suite, carrier and historical copy
 pins remain unchanged. A checker-code refresh is a separate reviewed change.
 
@@ -29,16 +29,19 @@ adds independent authority and full path-set reporting.
 ```sh
 python3 -m unittest discover -s tests -p test_reference_audit.py -v
 python3 scripts/reference_audit.py --inventory-only
-python3 scripts/reference_audit.py --checker-root /path/to/pinned/shared --checkout FAIR-bioHeaders/FAIR-bioHeaders-Specification=/path/to/pinned/shared --strict
+python3 scripts/reference_audit.py --checker-root /path/to/pinned/shared --checkout FAIR-bioHeaders/FAIR-bioHeaders-Specification=/path/to/pinned/shared
 python3 scripts/check_reference_audit_controls.py --checker-root /path/to/pinned/shared
 ```
 
 The shared checkout must be at the exact checker commit and have all referenced
-release tags/history available. Offline controls compare actual authority/local
-bytes, then require a digest computed from deliberately different bytes to report
-DRIFT and an unmapped query to report QUERY_FAILED. No fixture, pin or source file
-is rewritten by these controls. PR checks run adapter/refusal tests and these
-actual offline comparisons; they do not gate on live network state.
+release tags/history available. Required controls use a temporary synthetic Git
+repository, exercising FRESH, deliberately changed-byte DRIFT, confirmed ABSENT,
+and unmapped QUERY_FAILED outcomes with the actual checker. They never depend on
+current owning references remaining fresh. PR checks retain the current-reference
+report without gating on its findings; existing native contract/parity gates
+remain independent. An always-run fallback retains QUERY_FAILED if setup or
+execution produced no usable report. Execution failures may still fail the job;
+reference findings do not. No fixture, pin or source file is rewritten.
 
 The scheduled/manual job checks authoritative tag/commit bytes over the GitHub
 API with read-only permissions and retains the generated inventory and JSON
@@ -50,3 +53,13 @@ artifacts, and an unperformed comparison is not a pass. No auto-repin runs.
 The checks establish fidelity to the declared revision, not adoption, latest-main
 currency, biological validity or a new contract release. Other consumers still
 need their own actual rollout before the federation-wide issue can close.
+
+Controlling source repository/URL declarations are validated before normalization; missing or unexpected authorities refuse the run instead of being silently replaced with the publication authority. Historical observations and namespace `$id` values are not retrieval inputs.
+
+The bootstrap disables Git replacement objects, verifies exact committed bytes,
+and executes a private snapshot of those verified bytes until the subprocess
+finishes. A later change to the source checkout cannot change that executable.
+Identifiable missing revision/path/digest declarations remain incomplete data for
+the central engine's ABSENT classification; supplied floating references remain
+DRIFT inputs. Conflicting source authorities or malformed supplied metadata
+refuse normalization, with an observable QUERY_FAILED execution fallback.
