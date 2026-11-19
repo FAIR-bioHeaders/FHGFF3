@@ -60,11 +60,74 @@ def literal_assignments(root, name, wanted):
     return found
 
 
+def require_authority(data, context):
+    if isinstance(data, dict) and any(k in data for k in ('source', 'authority', 'source_repository', 'sourceUrl')):
+        raise ValueError(context + ': unsupported nested source override')
+    if not isinstance(data, dict) or data.get('repository') != AUTHORITY:
+        raise ValueError(context + ': missing or unexpected source repository')
+    if data.get('url') != 'https://github.com/' + AUTHORITY:
+        raise ValueError(context + ': missing or unexpected source URL')
+
+
+def reject_source_overrides(entry, context):
+    for key in ('repository', 'url', 'source', 'authority', 'source_repository', 'sourceUrl'):
+        if key in entry:
+            raise ValueError(context + ': unsupported per-entry source override ' + key)
+
+
+def string_declarations(root, filename, wanted):
+    assignments = {}
+    for node in ast.parse((root / filename).read_text()).body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    assignments[target.id] = node.value
+    active = set()
+    def evaluate(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        if isinstance(node, ast.Name) and node.id in assignments and node.id not in active:
+            active.add(node.id)
+            try:
+                return evaluate(assignments[node.id])
+            finally:
+                active.remove(node.id)
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            return evaluate(node.left) + evaluate(node.right)
+        if isinstance(node, ast.JoinedStr):
+            result = ''
+            for item in node.values:
+                if isinstance(item, ast.FormattedValue):
+                    if item.conversion != -1 or item.format_spec is not None:
+                        raise ValueError(filename + ': unsupported string conversion')
+                    result += evaluate(item.value)
+                else:
+                    result += evaluate(item)
+            return result
+        raise ValueError(filename + ': unsupported source declaration expression')
+    if not set(wanted) <= set(assignments):
+        raise ValueError(filename + ': missing source declarations')
+    return {name: evaluate(assignments[name]) for name in wanted}
+
+
+def require_assignment(root, filename, name, expression):
+    expected = ast.dump(ast.parse(expression, mode='eval').body)
+    for node in ast.parse((root / filename).read_text()).body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in node.targets):
+            if ast.dump(node.value) == expected:
+                return
+            break
+    raise ValueError(filename + ': missing or unsupported ' + name + ' locator')
+
+
 def declarations(root):
     name = 'header/provenance.json'
     data = load(root, name); source = data['source']
+    require_authority(source, 'provenance source')
     if not isinstance(source, dict) or source.get('repository') != AUTHORITY:
         raise ValueError(name + ': missing or unexpected source repository')
+    for entry in data['copied'] + data['imports']:
+        reject_source_overrides(entry, 'header entry')
     files = [measured_file(e['local'], e['upstream'], e['sha256']) for e in data['copied']]
     rows = [reference('released-header-tree', 'copied-tree', source['ref'], files,
                       source['commit'], materialStatus='released', localTree='header',
@@ -97,13 +160,26 @@ def inventory(root=ROOT):
 
 def verified_checker(root, source):
     pin = load(root, 'references/checker.json')
-    actual = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
-    if actual != pin['commit']:
-        raise ValueError('Checker checkout HEAD differs from the reviewed source pin')
+    if any(k in pin for k in ('url', 'source', 'authority', 'source_repository', 'sourceUrl')):
+        raise ValueError('Unsupported checker source attribution override')
+    if pin.get('repository') != AUTHORITY or pin.get('path') != 'scripts/check_references.py':
+        raise ValueError('Missing or unexpected checker source repository/path')
+    if not isinstance(pin.get('commit'), str) or not re.fullmatch('[0-9a-f]{40}', pin['commit']):
+        raise ValueError('Unusable immutable checker commit')
+    if not isinstance(pin.get('sha256'), str) or not re.fullmatch('[0-9a-f]{64}', pin['sha256']):
+        raise ValueError('Unusable checker digest')
+    if source.is_symlink() or (source / 'scripts').is_symlink() or (source / pin['path']).is_symlink():
+        raise ValueError('Checker source path must not be a symlink')
     script = (source / pin['path']).resolve()
     if not script.is_relative_to(source.resolve()):
         raise ValueError('Checker path escapes the reviewed source checkout')
-    if digest(script.read_bytes()) != pin['sha256']:
+    actual = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
+    if actual != pin['commit']:
+        raise ValueError('Checker checkout HEAD differs from the reviewed source pin')
+    immutable = subprocess.check_output(['git', '-C', str(source), 'show', pin['commit'] + ':' + pin['path']])
+    if script.read_bytes() != immutable:
+        raise ValueError('Checker working bytes differ from the immutable commit')
+    if digest(immutable) != pin['sha256']:
         raise ValueError('Checker source digest differs; refusing execution')
     return script
 
@@ -129,14 +205,14 @@ def main(argv=None):
         with tempfile.TemporaryDirectory() as directory:
             table_file = Path(directory) / 'inventory.json'
             table_file.write_text(json.dumps(table))
-            command = [sys.executable, str(script), '--inventory', str(table_file),
+            command = [sys.executable, '-I', str(script), '--inventory', str(table_file),
                        '--consumer', CONSUMER, '--consumer-root', str(ROOT)]
             for mapping in args.checkout:
                 command += ['--checkout', mapping]
             if args.strict:
                 command.append('--exit-on-findings')
             return subprocess.run(command, check=False).returncode
-    except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, SyntaxError, subprocess.CalledProcessError) as error:
         print(json.dumps(dict(advisory=True, status='UNUSABLE', error=str(error), wrotePins=[])))
         return 2
 
