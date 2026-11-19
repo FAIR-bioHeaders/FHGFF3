@@ -4,7 +4,7 @@ This repository holds two distinct things. Keep them separate.
 
 | Scope | Paths | What it is |
 | --- | --- | --- |
-| **Inherited GFF3 feature model** | `src/`, `jsonschema/`, `python/`, `rdf/`, `owl/`, `shex/`, `graphql/`, `csv/` | The forked biodatamodels/gff-schema draft feature model. It is **not** the FAIR header contract, and its upstream permissions are unresolved ([FHGFF3#3](https://github.com/FAIR-bioHeaders/FHGFF3/issues/3)). |
+| **Inherited GFF3 feature model** | `src/`, `jsonschema/`, `python/`, `rdf/`, `owl/`, `shex/`, `graphql/`, `csv/` | The forked biodatamodels/gff-schema draft feature model. It is **not** the FAIR header contract, and it is excluded from downstream reuse under the [maintainer no-reuse decision](#inherited-material-no-reuse-boundary). |
 | **FAIR FHGFF3 header contract** | `header/` | Development copy of the independently authored FAIR provenance header around GFF3: model, documentation, examples and conformance vectors. |
 
 ## The inherited GFF3 feature model
@@ -21,7 +21,8 @@ directories). Do not hand-edit the generated Python, JSON Schema, RDF/OWL, ShEx,
 GraphQL or documentation output; those are not primary sources. `make clean`
 removes both `target/` and `docs/`. This tree is inherited from the
 biodatamodels/gff-schema fork; read the [licensing section](#licensing) and
-[FHGFF3#3](https://github.com/FAIR-bioHeaders/FHGFF3/issues/3) before reusing it.
+[no-reuse boundary](#inherited-material-no-reuse-boundary). The build commands
+describe the inherited tree; they do not authorize reuse or distribution.
 
 ## The FAIR FHGFF3 header contract
 
@@ -49,7 +50,7 @@ feature model. Start with [`header/README.md`](header/README.md).
 - **Feature and biology checks:**
   [gff3-validator](https://github.com/FAIR-bioHeaders/gff3-validator) validates
   the GFF3 features themselves. A header never makes the features valid.
-- The archived FHT-File-Converter is not an active dependency.
+- The former FHR-File-Converter repository name redirects to FAIR-bioHeaders-Tools.
 
 ### Contributor checks
 
@@ -78,5 +79,33 @@ FAIR BioHeaders contributions use [MPL-2.0](LICENSE), subject to the scope and p
 The files under `header/` come from the MPL-2.0 shared publication repository and
 are new FAIR BioHeaders work here; the inherited feature model is excluded from
 that grant, and no file under `header/` is copied from it. The `LICENSE`
-inventory does not yet enumerate the header tree. Historical notices are
-preserved.
+inventory records the copied header scope through its upstream provenance.
+Historical notices are preserved.
+
+### Inherited material: no-reuse boundary
+
+David selected the documented no-reuse disposition for [FHGFF3#3](https://github.com/FAIR-bioHeaders/FHGFF3/issues/3)
+in [Round 14 decision D11](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification/issues/211#issuecomment-7017854934).
+The inherited snapshot is retained as history and reference material. It is
+excluded from FAIR BioHeaders downstream reuse, packaging and distribution as
+reusable schema/code until applicable permission is evidenced and a new reviewed
+scope decision is made. It is not a Project 9 dependency of the independently
+authored header. No upstream permission has been obtained by this decision.
+
+The exact inspected import is commit
+[`9c8cf644e93d5dbfeb3662dc03183d8ed7b830de`](https://github.com/FAIR-bioHeaders/FHGFF3/commit/9c8cf644e93d5dbfeb3662dc03183d8ed7b830de)
+(November 6, 2024). Its complete 27-path inventory is recorded in
+[LICENSE](LICENSE), including imported README/CONTRIBUTING portions, the feature
+model and generated artifacts. Git records Adam Wright as the upload commit's
+author; this is import provenance, not proof of original authorship or licensing
+rights. Original rights-holder authorship and an applicable upstream grant have
+not been established. The [existing upstream request](https://github.com/biodatamodels/gff-schema/issues/3)
+remains evidence to consult if reuse is reconsidered; no contact is required to
+complete the no-reuse disposition.
+
+Retain the snapshot, source history and all existing file-level notices. Do not
+apply this repository's MPL notice to the inherited material, delete it to imply
+resolution, or claim that the whole fork is licensed for reuse. Any replacement
+or revived downstream reuse requires its own rights/provenance review. The
+independent `header/` copy retains the shared publication source's permissions
+and notices as recorded in [its provenance](header/PROVENANCE.md).

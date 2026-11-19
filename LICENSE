@@ -19,6 +19,12 @@ policy only when their files or portions are identified in this
 inventory and the contributors have the necessary rights. Retain and
 follow any applicable existing file-level notices.
 
+Copied FAIR BioHeaders header material:
+- The files copied under header/ retain the permissions and notices of the
+  shared publication repository at the commit recorded in
+  header/provenance.json; header/PROVENANCE.md inventories the copied paths.
+  This source-specific record is not a grant for inherited gff-schema files.
+
 Inherited snapshot, excluded from this MPL-2.0 grant:
 The following files were added in repository import commit 9c8cf64
 (November 6, 2024). In README.md and CONTRIBUTING.md, only the sections

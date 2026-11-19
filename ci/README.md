@@ -87,17 +87,20 @@ different outcomes. This CI does not claim an optional gff3-validator integratio
 lane or parent-link verification. Those remain with the toolkit and validator's
 own suites; plain header-free GFF3 remains usable independently.
 
-## Inherited model boundary and open tracker
+## Inherited model boundary
 
 No job runs `make`, generates or republishes inherited artifacts. The separate
-inherited-model lane is **not enabled**, pending
-[licensing evidence in #3](https://github.com/FAIR-bioHeaders/FHGFF3/issues/3).
-The upstream request is still awaiting clarification as of October 24, 2026;
-our MPL contribution notice is not an upstream grant. An enabled inherited lane
-would need an explicit reuse decision, generator pins and a disposable build tree.
-`make test` generates/stages artifacts, and `make clean` removes tracked docs.
+inherited-model lane is **not enabled** under the selected
+[no-reuse boundary](../README.md#inherited-material-no-reuse-boundary)
+([issue #3](https://github.com/FAIR-bioHeaders/FHGFF3/issues/3), Round 14 D11).
+Permission remains unavailable; the decision retains the snapshot and notices
+without treating upstream clarification as an independent-header completion gate.
+An enabled inherited lane would need evidenced reuse permission, a new reviewed
+scope decision, generator pins and a disposable build tree. `make test`
+generates/stages artifacts, and `make clean` removes tracked docs.
 
 Completing #8 does not complete the parent
-[header tracker #2](https://github.com/FAIR-bioHeaders/FHGFF3/issues/2): its licensing
-child remains open. No schema, fixture bytes, license grants or releases change
-as part of these CI checks.
+[header tracker #2](https://github.com/FAIR-bioHeaders/FHGFF3/issues/2): joint
+binding acceptance and consumer delivery retain their own requirements. The
+inherited license question is dispositioned by no-reuse, not by an upstream grant.
+No schema, fixture bytes, license grants or releases change in this documentation.

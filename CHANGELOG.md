@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Record the maintainer no-reuse disposition for the inherited 27-path
+  gff-schema snapshot, preserving history/notices without an upstream grant.
+  Identify the independently copied header scope through its source provenance
+  and confirm that its release pin does not follow shared-main drafts (#3, #25).
+
 - **HTML binding brought up to the v0.6.0 pin.** The test-only microdata reader
   now carries every released FHGFF3 contract: v0.4.0 to v0.4.2 (`"1.0"`), v0.5.0
   (`"1.1"`) and v0.6.0 (`"1.2"`), with byte copies of the released schemas under
