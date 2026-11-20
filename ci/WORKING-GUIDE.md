@@ -21,7 +21,9 @@ reads the exact recorded revision with `git show`, not the checkout's current
 files, and compares source bytes. A digest-only result is not upstream parity;
 a parity result is not pin freshness. Exit 1 means a mismatch or invalid record.
 Neither command edits the header tree or fetches a newer contract automatically.
-The upstream checkout needs the recorded commit and tag objects available.
+The upstream checkout needs the recorded commit and tag objects available;
+missing objects, a missing tag or a ref mismatch fail the explicit comparison
+with a nonzero exit. They are not silently skipped.
 
 ## Typed header fixtures and feature validation
 
@@ -42,7 +44,8 @@ specification, not generated from this fork's feature model.
 biodatamodels/gff-schema generator. `make gen` writes `target/`; `make stage`
 changes tracked generated output; `make test` invokes generation/staging rather
 than an independent validator. `make clean` removes `docs/` as well as `target/`.
-Do not run these as harmless checks or redistribute inherited material under
+Never run destructive inherited build/clean commands in a checkout containing
+uncommitted work. Do not run these as harmless checks or redistribute inherited material under
 the FAIR contribution license. Its unresolved upstream permissions and the
 maintainer no-reuse boundary remain in force. These commands do not generate
 or publish the independently authored FAIR header/native contract.
