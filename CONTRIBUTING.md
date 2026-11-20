@@ -55,3 +55,12 @@ model generation is enabled while its upstream permissions remain unresolved.
 ## Contribution licensing
 
 FAIR BioHeaders contributions use [MPL-2.0](LICENSE), subject to the scope and preserved permissions stated there. This does **not** license the inherited biodatamodels/gff-schema material: no upstream root license was present in the inspected checkout, and upstream permissions remain to be clarified. New contributions must have the rights needed for their declared license; retain source notices.
+
+## Review and merge handoff
+
+Every PR receives independent review from another actual model, preferably from
+a different family. Record author and reviewer identities. Agents fix failing CI
+and actionable overall/inline reviews and hand the validated current head to a
+human. Only humans merge; agents never merge, enable auto-merge, queue a merge,
+use a merge proxy or push a default branch as a substitute. See
+[AGENTS.md](AGENTS.md) for the current policy and review dispositions.
