@@ -1,5 +1,8 @@
 # GFF Schema
 
+Start with the [reader and maintainer guide](ci/WORKING-GUIDE.md) for
+setup, local checks and their limitations.
+
 This repository holds two distinct things. Keep them separate.
 
 | Scope | Paths | What it is |
